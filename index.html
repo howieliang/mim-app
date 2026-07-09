@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mind in Images - v26.1</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
+    /* Centered 3:4 portrait column */
+    #col {
+      position: relative;
+      background: #f0f0f0;
+      overflow: hidden;
+      border: 2px solid #555;
+    }
+
+    .scr {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      align-items: center;
+    }
+    .scr.on { display: flex; }
+
+
+    .box {
+      background: #d8d8d8;
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 21px;
+      text-align: center;
+    }
+
+    /* Instruction text + audio button row */
+    .instr-row {
+      width: 90%;
+      display: flex;
+      gap: 4%;
+      align-items: stretch;
+      flex-shrink: 0;
+    }
+
+    .instr {
+      background: rgba(0,0,0,0.35);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 19px;
+      color: #fff;
+      line-height: 1.45;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .instr-btn {
+      flex-shrink: 0;
+      align-self: center;
+      width: 18%;
+      aspect-ratio: 300 / 303;
+      outline: none;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 8px;
+      font-size: 21px;
+      font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* ── Image-based buttons (GN assets) ── */
+    .img-btn {
+      background-color: transparent !important;
+      background-size: 100% 100% !important;
+      background-repeat: no-repeat !important;
+      background-position: center !important;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    /* Navigation */
+    .gn-play     { background-image: url('Assets/Generales/GN02.png'); }
+    .gn-play:active { background-image: url('Assets/Generales/GN03.png'); }
+    .gn-back     { background-image: url('Assets/Generales/GN12.png'); }
+    .gn-back:active { background-image: url('Assets/Generales/GN13.png'); }
+    .gn-continue { background-image: url('Assets/Generales/GN16.png'); }
+    .gn-continue:active { background-image: url('Assets/Generales/GN17.png'); }
+    .gn-exit     { background-image: url('Assets/Generales/GN18.png'); }
+    .gn-exit:active  { background-image: url('Assets/Generales/GN19.png'); }
+    .gn-ok       { background-image: url('Assets/Generales/GN20.png'); }
+    .gn-ok:active    { background-image: url('Assets/Generales/GN21.png'); }
+    /* Task buttons */
+    .gn-task-done { background-image: url('Assets/Generales/GN08.png'); color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+    .gn-task-done:active { background-image: url('Assets/Generales/GN09.png'); }
+    .gn-task-todo { background-image: url('Assets/Generales/GN10.png'); color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+    .gn-task-todo:active { background-image: url('Assets/Generales/GN11.png'); }
+    .gn-task-locked { background-image: url('Assets/Generales/GN10.png'); color: #ddd; opacity: 0.5; cursor: not-allowed; }
+    .gn-task-dev    { background-image: url('Assets/Generales/GN10.png'); color: #bbb; opacity: 0.4; cursor: not-allowed; }
+    /* Audio buttons */
+    .gn-aud-blue { background-image: url('Assets/Generales/GN23.png'); }
+    .gn-aud-blue:active, .gn-aud-blue.playing { background-image: url('Assets/Generales/GN24.png'); }
+    .gn-aud-yellow { background-image: url('Assets/Generales/GN25.png'); background-size: contain !important; }
+    .gn-aud-yellow:active, .gn-aud-yellow.playing { background-image: url('Assets/Generales/GN26.png'); background-size: contain !important; }
+
+    .btn-dev    { background: #888; opacity: 0.55; cursor: not-allowed; }
+
+    /* ── LOADING ── */
+    #scr-loading { justify-content: center; gap: 5%; }
+    #load-bar-bg {
+      width: 75%;
+      height: 18px;
+      background: #ccc;
+      border-radius: 9px;
+      overflow: hidden;
+    }
+    #load-bar { height: 100%; width: 0; background: #2980b9; }
+
+    /* ── Animated background (Fondo) ── */
+    #fondo-layer {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    #fondo-layer img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    #fondo-layer::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.627); /* matches DemoGame fill(255,255,255,160) */
+      pointer-events: none;
+    }
+
+    /* ── INICIO ── */
+    #scr-inicio { justify-content: center; gap: 5%; }
+
+    /* ── TAREAS ── */
+    #scr-tareas { justify-content: flex-start; padding: 2% 5%; gap: 1.5%; }
+    #scr-tareas .instr { background: rgba(0,0,0,0.6); }
+
+    /* ── INSTRUCT ── */
+    #scr-instruct { justify-content: flex-start; padding: 3% 5%; gap: 2%; }
+
+    /* ── MEMO1 ── */
+    #scr-memo1 { justify-content: flex-start; padding: 3% 5%; gap: 2%; }
+
+    /* ── CARDS ── */
+    #scr-cards { justify-content: flex-start; padding: 1.5% 5% 2%; gap: 1%; }
+
+    #round-label {
+      font-size: 35px;
+      font-weight: bold;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+
+    /* Card grid: 2 cols, 5 rows */
+    #card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      gap: 3px;
+    }
+
+    .card {
+      border: 3px solid #bbb;
+      border-radius: 6px;
+      background: #fff;
+      display: flex;
+      overflow: hidden;
+      cursor: pointer;
+      min-height: 0;
+    }
+    .card.selected { border-color: #e6a817; background: #fffaed; }
+    .card:active { opacity: 0.75; }
+
+    .card-img {
+      position: relative;
+      flex: 0 0 70%;
+      background: #eee;
+      border-right: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 0;
+    }
+    .card-img img.card-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .select-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .card.selected .select-overlay { display: block; }
+    .card.selected .card-img { background: #f5e8c0; }
+
+    .card-snd {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .btn-row {
+      display: flex;
+      width: 100%;
+      gap: 5%;
+      flex-shrink: 0;
+      align-items: center;
+    }
+    .btn-row .btn { flex: 1; }
+
+    /* ── POPUP ── */
+    #popup {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #popup.on { display: flex; }
+    #popup-box {
+      background: #fff;
+      border-radius: 12px;
+      width: 65%;
+      overflow: hidden;
+      border: 2px solid #ccc;
+    }
+    #popup-header { background: #e67e22; color: #fff; font-weight: bold; padding: 8px 12px; font-size: 21px; }
+    #popup-msg { padding: 12px; font-size: 19px; color: #333; line-height: 1.45; }
+    #popup-ok { display: block; width: 75%; margin: 8px auto 12px; padding: 0; aspect-ratio: 300 / 86; }
+
+    /* ── COMPLETE overlay ── */
+    #complete {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 90;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    #complete.on { display: flex; }
+    #complete-text { font-size: 42px; font-weight: bold; text-align: center; padding: 0 10%; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.5); }
+    #complete p { color: #fff; font-size: 21px; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+
+    /* ── TRANSITION overlay ── */
+    #trans-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 400;
+    }
+    #trans-overlay img {
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<div id="col">
+
+  <div id="fondo-layer"><img id="fondo-img" src="" alt=""></div>
+  <div id="trans-overlay"><img id="trans-img" src="" alt=""></div>
+
+  <!-- ══ CARGANDO ══ -->
+  <div class="scr on" id="scr-loading">
+    <img src="Assets/Generales/GN00.png" style="width:55%;object-fit:contain;flex-shrink:0">
+    <div id="load-bar-bg"><div id="load-bar"></div></div>
+    <p style="color:#888;font-size:21px">Loading assets…</p>
+  </div>
+
+  <!-- ══ INICIO ══ -->
+  <div class="scr" id="scr-inicio">
+    <img src="Assets/Generales/GN00.png" style="width:80%;object-fit:contain;flex-shrink:0">
+    <p style="color:#555;font-size:22px">User ID: <strong id="uid"></strong></p>
+    <button class="btn img-btn gn-play" style="width:70%;aspect-ratio:400/67" onclick="playSfx(sfx.papel);go('tareas')"></button>
+  </div>
+
+  <!-- ══ TAREAS ══ -->
+  <div class="scr" id="scr-tareas">
+    <img src="Assets/Generales/GN01.png" style="width:90%;object-fit:contain;flex-shrink:0">
+    <div class="instr-row">
+      <div class="instr" style="font-size:18px">
+        Tap a brown task to begin, and watch it turn green when you finish.
+        You can repeat it as often as you like. Missions reset every day.
+      </div>
+      <button class="instr-btn img-btn gn-aud-blue" id="btn-instr-tareas"
+        onclick="playInstrSound(instrPath(0), this)"></button>
+    </div>
+    <button id="btn-conv" class="btn img-btn" style="width:90%;aspect-ratio:600/110" onclick="startTask('conv')">Convergence</button>
+    <button id="btn-div"  class="btn img-btn" style="width:90%;aspect-ratio:600/110" onclick="startTask('div')">Divergence</button>
+    <button id="btn-memo" class="btn img-btn" style="width:90%;aspect-ratio:600/110" onclick="startTask('memo')">Memory</button>
+    <button class="btn img-btn gn-back" style="width:90%;aspect-ratio:300/86;margin-top:auto;flex-shrink:0" onclick="playSfx(sfx.papel);go('inicio')"></button>
+  </div>
+
+  <!-- ══ CONVERGENCIA_1 / DIVERGENCIA_1 ══ -->
+  <div class="scr" id="scr-instruct">
+    <div class="instr-row">
+      <div class="instr" id="instr-text"></div>
+      <button class="instr-btn img-btn gn-aud-blue" id="btn-instr-instruct"></button>
+    </div>
+    <div class="box" id="anim-box" style="width:70%;flex:1;min-height:0;margin:2% 0;padding:0;overflow:hidden">
+      <img id="anim-img" style="width:100%;height:100%;object-fit:contain;display:block">
+    </div>
+    <div class="btn-row">
+      <button class="btn img-btn gn-back"     style="aspect-ratio:300/86" onclick="backFromInstruct()"></button>
+      <button class="btn img-btn gn-continue" style="aspect-ratio:300/86" onclick="continueFromInstruct()"></button>
+    </div>
+  </div>
+
+  <!-- ══ MEMORIA_1 ══ -->
+  <div class="scr" id="scr-memo1">
+    <div class="instr-row">
+      <div class="instr">
+        There are 3 rounds in this game. In each round, take your time and select
+        2 pictures that you chose today during the Convergence and Divergence tasks,
+        as shown in the example below. Press the red 'Continue' button to begin.
+      </div>
+      <button class="instr-btn img-btn gn-aud-blue" onclick="playInstrSound(instrPath(7), this)"></button>
+    </div>
+    <div class="box" id="memo-anim-box" style="width:70%;flex:1;min-height:0;margin:2% 0;padding:0;overflow:hidden">
+      <img id="memo-anim-img" style="width:100%;height:100%;object-fit:contain;display:block">
+    </div>
+    <div class="btn-row">
+      <button class="btn img-btn gn-back"     style="aspect-ratio:300/86" onclick="backFromInstruct()"></button>
+      <button class="btn img-btn gn-continue" style="aspect-ratio:300/86" onclick="continueFromInstruct()"></button>
+    </div>
+  </div>
+
+  <!-- ══ CARD SCREEN (Conv2 / Div2 / Memo2) ══ -->
+  <div class="scr" id="scr-cards">
+    <div id="round-label">1/5</div>
+    <div class="instr-row">
+      <div class="instr" id="cards-tip" style="padding:6px 10px;font-size:18px"></div>
+      <button class="instr-btn img-btn gn-aud-blue" id="btn-instr-cards"></button>
+    </div>
+    <div id="card-grid"></div>
+    <div class="btn-row" style="margin-top:2px">
+      <button class="btn img-btn gn-exit"     style="aspect-ratio:300/86" onclick="exitCardsTransition()"></button>
+      <button class="btn img-btn gn-continue" style="aspect-ratio:300/86" onclick="nextCards()"></button>
+    </div>
+  </div>
+
+  <!-- ══ POPUP ══ -->
+  <div id="popup">
+    <div id="popup-box">
+      <div id="popup-header">Notice</div>
+      <div id="popup-msg"></div>
+      <button class="btn img-btn gn-ok" id="popup-ok" onclick="closePopup()"></button>
+    </div>
+  </div>
+
+  <!-- ══ TASK COMPLETE ══ -->
+  <div id="complete">
+    <div id="complete-text">Task Completed!</div>
+    <img id="emoji-img" src="" alt="" style="width:50%;object-fit:contain;flex-shrink:0">
+  </div>
+</div>
+
+<script>
+// ─── Image / audio path helpers ───────────────────────────────────────────────
+// Cards are indexed 0-based; filenames are 1-based two-digit (I01.png … I75.png)
+function imgPath(idx) {
+  return 'Assets/Cartas/I' + String(idx + 1).padStart(2, '0') + '.png';
+}
+// Audio word files mirror the same 1-based numbering
+function audioPath(idx) {
+  return 'Assets/Audio/Palabras/' + String(idx + 1).padStart(2, '0') + '.mp3';
+}
+// Instruction audio files are 0-based two-digit (00.mp3 … 09.mp3)
+function instrPath(n) {
+  return 'Assets/Audio/Instrucciones/' + String(n).padStart(2, '0') + '.mp3';
+}
+
+// ─── Round maps (exact copy from DemoGame P01_Convergencia02.js) ──────────────
+const mapaConvergencia = [
+  [34, 0, 12, 25, 47, 48, 62, 51, 2, 38],
+  [46, 24, 22, 13, 51, 0, 68, 11, 25, 61],
+  [10, 51, 61, 0, 47, 37, 20, 25, 11, 43],
+  [57, 9, 49, 30, 25, 26, 70, 51, 0, 22],
+  [18, 74, 46, 64, 53, 38, 60, 69, 17, 40]
+];
+
+const mapaDivergencia = [
+  [29, 14, 63, 68, 13, 50, 12, 45, 67, 54],
+  [38, 11, 66, 7, 55, 3, 52, 4, 21, 61],
+  [56, 51, 33, 17, 0, 31, 8, 39, 22, 28],
+  [23, 41, 59, 35, 5, 27, 58, 65, 16, 36],
+  [42, 15, 19, 72, 6, 32, 71, 0, 44, 1]
+];
+
+// Memory map built dynamically in initMemoryMap()
+let mapaMemoria = [];
+
+// ─── Background music ────────────────────────────────────────────────────────
+const music = new Audio('Assets/Audio/Musica/musicaMenu.mp3');
+music.loop   = true;
+music.volume = 0.5;
+
+// ─── Effect sounds (independent of instruction/card audio system) ─────────────
+// S00 sonidoPapel   – screen navigation
+// S01 sonidoBoton   – button press
+// S02 sonidoPop     – card image tap / selection
+// S03 sonidoTransicion – round-number transition
+// S04 sonidoCompleto – task complete
+const sfx = Object.fromEntries(
+  ['papel','boton','pop','transicion','completo']
+  .map((name, i) => [name, new Audio('Assets/Audio/Efectos/S0' + i + '.mp3')])
+);
+
+function playSfx(sound) {
+  sound.currentTime = 0;
+  sound.play().catch(() => {});
+}
+
+// ─── Audio ───────────────────────────────────────────────────────────────────
+let currentAudio = null;
+let currentSndBtn = null;
+
+// Shared play/toggle — used by both card sounds and instruction sounds
+function playSound(path, btnEl) {
+  if (currentSndBtn === btnEl && currentAudio && !currentAudio.paused) {
+    stopAudio(); return;
+  }
+  stopAudio();
+  const audio = new Audio(path);
+  currentAudio = audio;
+  currentSndBtn = btnEl;
+  btnEl.classList.add('playing');
+  audio.play().catch(() => {});
+  audio.addEventListener('ended', () => {
+    btnEl.classList.remove('playing');
+    if (currentAudio === audio) { currentAudio = null; currentSndBtn = null; }
+  });
+}
+
+function playCardSound(imgIdx, btnEl) { playSound(audioPath(imgIdx), btnEl); }
+function playInstrSound(path, btnEl)  { playSound(path, btnEl); }
+
+// ─── Animated background (Fondo) ─────────────────────────────────────────────
+// Mirrors DemoGame DibujarFondoInicio(): 40 frames at 100ms each, loops.
+// White semi-transparent tint applied via CSS ::after.
+let fondoTimer = null;
+let fondoFrame = 1;
+
+function fondoStep() {
+  document.getElementById('fondo-img').src =
+    'Assets/Fondo/F' + String(fondoFrame).padStart(2, '0') + '.png';
+  fondoFrame = (fondoFrame % 40) + 1;
+  fondoTimer = setTimeout(fondoStep, 100);
+}
+
+function startFondo() {
+  if (fondoTimer) return;
+  document.getElementById('fondo-layer').style.display = 'block';
+  fondoStep();
+}
+
+function stopFondo() {
+  if (fondoTimer) { clearTimeout(fondoTimer); fondoTimer = null; }
+  document.getElementById('fondo-layer').style.display = 'none';
+}
+
+// ─── Page transition engine ───────────────────────────────────────────────────
+// Mirrors DemoGame FuncionesVarias.js EfectoTransicion():
+// Forward (close): frames 0→last at 20ms each, then call midpoint fn, then Reverse (open): last→0.
+const TRANS_CONFIGS = {
+  ESTRELLA: { folder: 'Assets/Transision/Estrellas', prefix: 'E', frames: 21 },
+  NUBE:     { folder: 'Assets/Transision/Nubes',     prefix: 'N', frames: 21 },
+  CIUDAD:   { folder: 'Assets/Transision/Ciudad',    prefix: 'C', frames: 22 },
+  ARBOL:    { folder: 'Assets/Transision/Arboles',   prefix: 'A', frames: 23 },
+  MONTANA:  { folder: 'Assets/Transision/Montana',   prefix: 'M', frames: 18 },
+  PLAYA:    { folder: 'Assets/Transision/Playa',     prefix: 'P', frames: 18 },
+};
+// Which transition type each task uses
+const TASK_TRANS = { conv: 'ESTRELLA', div: 'NUBE', memo: 'CIUDAD' };
+
+let transTimer = null;
+
+function playTransition(type, onMidpoint) {
+  const cfg = TRANS_CONFIGS[type];
+  if (!cfg) { onMidpoint(); return; }
+  if (transTimer) { clearTimeout(transTimer); transTimer = null; }
+
+  const overlay = document.getElementById('trans-overlay');
+  const img     = document.getElementById('trans-img');
+  overlay.style.display = 'block';
+
+  let frame = 0;
+
+  function stepOut() {
+    img.src = cfg.folder + '/' + cfg.prefix + String(frame).padStart(2, '0') + '.png';
+    frame++;
+    if (frame < cfg.frames) {
+      transTimer = setTimeout(stepOut, 20);
+    } else {
+      onMidpoint();           // switch screen at peak of transition
+      frame = cfg.frames - 1;
+      stepIn();
+    }
+  }
+
+  function stepIn() {
+    img.src = cfg.folder + '/' + cfg.prefix + String(frame).padStart(2, '0') + '.png';
+    frame--;
+    if (frame >= 0) {
+      transTimer = setTimeout(stepIn, 20);
+    } else {
+      overlay.style.display = 'none';
+    }
+  }
+
+  stepOut();
+}
+
+// Navigation wrappers used by HTML buttons
+function backFromInstruct() {
+  playSfx(sfx.papel);
+  playTransition(TASK_TRANS[taskType], () => go('tareas'));
+}
+function continueFromInstruct() {
+  playTransition(TASK_TRANS[taskType], () => enterCards());
+}
+function exitCardsTransition() {
+  playTransition(TASK_TRANS[taskType], () => exitCards());
+}
+
+// ─── Example animation engine ─────────────────────────────────────────────────
+// Mirrors DemoGame P01_Convergencia01.js dibujarAnimacionConver_1():
+// first and last frame hold 2000ms, all others advance every 100ms, loops.
+const ANIM_CONFIGS = {
+  conv: { folder: 'Assets/ExpConvergencia', frames: 31, bg: '#ffff00', boxId: 'anim-box',      imgId: 'anim-img' },
+  div:  { folder: 'Assets/ExpDivergencia',  frames: 34, bg: '#0077bb', boxId: 'anim-box',      imgId: 'anim-img' },
+  memo: { folder: 'Assets/ExpMemoria',      frames: 17, bg: '#eb977d', boxId: 'memo-anim-box', imgId: 'memo-anim-img' },
+};
+
+let animTimer = null;
+let animFrame = 0;
+let animConfig = null;
+
+function animStep() {
+  const cfg = animConfig;
+  const img = document.getElementById(cfg.imgId);
+  img.src = cfg.folder + '/' + String(animFrame).padStart(2, '0') + '.png';
+  const isEdge = (animFrame === 0 || animFrame === cfg.frames - 1);
+  animTimer = setTimeout(() => {
+    animFrame = (animFrame + 1) % cfg.frames;
+    animStep();
+  }, isEdge ? 2000 : 100);
+}
+
+function startAnim(type) {
+  stopAnim();
+  animConfig = ANIM_CONFIGS[type];
+  animFrame = 0;
+  document.getElementById(animConfig.boxId).style.background = animConfig.bg;
+  animStep();
+}
+
+function stopAnim() {
+  if (animTimer) { clearTimeout(animTimer); animTimer = null; }
+  animConfig = null;
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let taskType = 'conv';   // 'conv' | 'div' | 'memo'
+let round = 0;
+let selections = [];     // card slot positions (0-9) currently selected
+let convDone = false, divDone = false, memDone = false;
+
+let tareasPrimeraVez  = true;  // TAREAS tip: once per session
+let cardsPrimerAudio  = false; // Cards tip: reset true on each task entry, clears after playing
+
+// Unique image indices chosen by the user across all rounds
+const convUnicas = new Set();
+const divUnicas  = new Set();
+
+const TASK_COLORS = { conv: '#7a367a', div: '#3234ba', memo: '#d715c4' };
+
+// ─── User ID ──────────────────────────────────────────────────────────────────
+const userId = (() => {
+  let id = localStorage.getItem('mim_wf_uid');
+  if (!id) {
+    const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    id = Array.from({length: 6}, () => c[Math.floor(Math.random() * c.length)]).join('');
+    localStorage.setItem('mim_wf_uid', id);
+  }
+  return id;
+})();
+document.getElementById('uid').textContent = userId;
+
+// ─── Layout: maintain 3:4 portrait column ────────────────────────────────────
+function resize() {
+  const col = document.getElementById('col');
+  let h = window.innerHeight;
+  let w = h * 3 / 4;
+  if (w > window.innerWidth) { w = window.innerWidth; h = w * 4 / 3; }
+  col.style.width  = w + 'px';
+  col.style.height = h + 'px';
+  col.style.fontSize = Math.round(w / 28) + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ─── Screen navigation ────────────────────────────────────────────────────────
+// Background images per screen/taskType — mirrors DemoGame draw() DibujarImagenRecorte calls
+const SCREEN_BG = {
+  instruct: { conv: 'Assets/FondoEstatico/01.png', div: 'Assets/FondoEstatico/03.png' },
+  cards:    { conv: 'Assets/FondoEstatico/01.png', div: 'Assets/FondoEstatico/03.png', memo: 'Assets/FondoEstatico/04.png' },
+  memo1:    'Assets/FondoEstatico/04.png',
+};
+
+function setBg(path) {
+  const col = document.getElementById('col');
+  col.style.backgroundImage = path ? `url('${path}')` : '';
+  col.style.backgroundSize = 'cover';
+  col.style.backgroundPosition = 'center';
+}
+
+function go(screen) {
+  stopAudio();
+  stopAnim();
+  // Animated background: show on menu screens, hide on task screens
+  if (['inicio','tareas'].includes(screen)) { startFondo(); }
+  else { stopFondo(); }
+  document.querySelectorAll('.scr').forEach(s => s.classList.remove('on'));
+  document.getElementById('scr-' + screen).classList.add('on');
+  if (screen === 'tareas') refreshTaskButtons();
+
+  // Set background — taskType is already updated before go() is called
+  const bgEntry = SCREEN_BG[screen];
+  setBg(bgEntry ? (typeof bgEntry === 'string' ? bgEntry : bgEntry[taskType]) : null);
+
+  // Music: play on menus and instruction screens, stop on active card screens
+  // Mirrors DemoGame draw() music logic per estado
+  if (['inicio','tareas','instruct','memo1'].includes(screen)) {
+    if (music.paused) music.play().catch(() => {});
+  } else if (screen === 'cards') {
+    if (!music.paused) { music.pause(); music.currentTime = 0; }
+  }
+  // Auto-play TAREAS tip on first ever visit (mirrors TareasPrimeraInstruccion)
+  if (screen === 'tareas' && tareasPrimeraVez) {
+    tareasPrimeraVez = false;
+    const btn = document.getElementById('btn-instr-tareas');
+    setTimeout(() => playInstrSound(instrPath(0), btn), 150);
+  }
+}
+
+// ─── Loading simulation ───────────────────────────────────────────────────────
+let pct = 0;
+const bar = document.getElementById('load-bar');
+const loadTimer = setInterval(() => {
+  pct = Math.min(100, pct + Math.random() * 18);
+  bar.style.width = pct + '%';
+  if (pct >= 100) { clearInterval(loadTimer); setTimeout(() => go('inicio'), 350); }
+}, 120);
+
+// ─── Task menu ────────────────────────────────────────────────────────────────
+function refreshTaskButtons() {
+  const bc = document.getElementById('btn-conv');
+  const bd = document.getElementById('btn-div');
+  const bm = document.getElementById('btn-memo');
+  bc.className = 'btn img-btn ' + (convDone ? 'gn-task-done' : 'gn-task-todo');
+  bd.className = 'btn img-btn ' + (divDone  ? 'gn-task-done' : 'gn-task-todo');
+  if (convDone && divDone) {
+    bm.className = 'btn img-btn ' + (memDone ? 'gn-task-done' : 'gn-task-todo');
+    bm.onclick = () => startTask('memo');
+  } else {
+    bm.className = 'btn img-btn gn-task-locked';
+    bm.onclick = () => showPopup(
+      'You must complete the Convergence and Divergence tasks before starting Memory.'
+    );
+  }
+}
+
+function startTask(type) {
+  playSfx(sfx.boton);
+  taskType = type;
+  round = 0;
+  selections = [];
+
+  if (type === 'memo') {
+    initMemoryMap();
+    cardsPrimerAudio = true;
+    playTransition(TASK_TRANS['memo'], () => {
+      go('memo1');
+      startAnim('memo');
+      const btn = document.querySelector('#scr-memo1 .instr-btn');
+      setTimeout(() => playInstrSound(instrPath(7), btn), 150);
+    });
+    return;
+  }
+
+  const isDiv = type === 'div';
+  document.getElementById('instr-text').textContent = isDiv
+    ? "This game consists of 5 rounds. In each one, examine the images at your own pace and find the 3 that stand out because they are the least alike. Look at the example below for help, and tap the red 'Continue' button when you are ready."
+    : "There are 5 rounds in this game. In each one, look at the pictures at your own pace and select the 3 that have the most in common, as shown in the example below. Press the red 'Continue' button to begin.";
+
+  // Wire instruction audio button to the correct file for this task type
+  const instrBtn = document.getElementById('btn-instr-instruct');
+  const instrFile = instrPath(isDiv ? 4 : 1);
+  instrBtn.onclick = () => playInstrSound(instrFile, instrBtn);
+
+  cardsPrimerAudio = true;
+  playTransition(TASK_TRANS[type], () => {
+    go('instruct');
+    startAnim(isDiv ? 'div' : 'conv');
+    setTimeout(() => playInstrSound(instrFile, instrBtn), 150);
+  });
+}
+
+// ─── Memory map initialisation ────────────────────────────────────────────────
+// Mirrors InicializarMapaMemo() from P02_Memoria02.js.
+// The original uses indices 75–96 as neutral distractors (cards not in conv/div maps).
+// TUe_MIM_v1 only has I01–I75 (indices 0–74), so distractors are drawn from the
+// full 0–74 pool minus the user's own collected picks.
+function initMemoryMap() {
+  const convArr = Array.from(convUnicas);
+  const divArr  = Array.from(divUnicas);
+
+  // Need at least 3 picks from each task; fall back to placeholders if short
+  const convPicks = pickRandom(convArr.length >= 3 ? convArr : range(0, 24), 3);
+  const divPicks  = pickRandom(divArr.length  >= 3 ? divArr  : range(25, 49), 3);
+
+  // Distractor pool: all indices 0–74 not already chosen by the user
+  const userPicks = new Set([...convArr, ...divArr]);
+  const pool = range(0, 74).filter(n => !userPicks.has(n));
+
+  mapaMemoria = [0, 1, 2].map(i => {
+    const distractors = pickRandom(pool, 8);
+    const round10 = [...distractors, convPicks[i], divPicks[i]];
+    return pickRandom(round10, round10.length); // shuffle
+  });
+}
+
+function range(a, b) {
+  return Array.from({length: b - a + 1}, (_, i) => a + i);
+}
+
+function pickRandom(arr, n) {
+  const copy = [...arr];
+  const result = [];
+  for (let i = 0; i < n && copy.length > 0; i++) {
+    const idx = Math.floor(Math.random() * copy.length);
+    result.push(copy.splice(idx, 1)[0]);
+  }
+  return result;
+}
+
+// ─── Enter card screen ────────────────────────────────────────────────────────
+function currentMap() {
+  if (taskType === 'conv') return mapaConvergencia[round];
+  if (taskType === 'div')  return mapaDivergencia[round];
+  return mapaMemoria[round];
+}
+
+function enterCards() {
+  playSfx(sfx.papel);
+  selections = [];
+  buildGrid();
+  updateRoundLabel();
+  const tips = {
+    conv: 'TIP: Select the 3 most closely related images.',
+    div:  'TIP: Pick the 3 most unrelated images.',
+    memo: 'TIP: Select 2 pictures that you remember choosing today.',
+  };
+  document.getElementById('cards-tip').textContent = tips[taskType];
+
+  // Wire the tip audio button to the correct file for this task type
+  const tipBtn = document.getElementById('btn-instr-cards');
+  const tipFile = instrPath({ conv: 2, div: 5, memo: 9 }[taskType]);
+  tipBtn.onclick = () => playInstrSound(tipFile, tipBtn);
+
+  go('cards');
+
+  // Auto-play tip once per task entry, first round only (mirrors Conv2PrimerAudio / Memo2PrimerAudio)
+  if (cardsPrimerAudio) {
+    cardsPrimerAudio = false;
+    setTimeout(() => playInstrSound(tipFile, tipBtn), 150);
+  }
+}
+
+function updateRoundLabel() {
+  const max = taskType === 'memo' ? 3 : 5;
+  const lbl = document.getElementById('round-label');
+  lbl.textContent = (round + 1) + '/' + max;
+  lbl.style.color = TASK_COLORS[taskType];
+}
+
+// ─── Card grid ────────────────────────────────────────────────────────────────
+function buildGrid() {
+  const grid = document.getElementById('card-grid');
+  grid.innerHTML = '';
+  const indices = currentMap();
+
+  for (let i = 0; i < 10; i++) {
+    const imgIdx = indices[i];
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.slot = i;
+    card.dataset.imgIdx = imgIdx;
+
+    // Image area
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'card-img';
+    const img = document.createElement('img');
+    img.className = 'card-photo';
+    img.src = imgPath(imgIdx);
+    img.alt = 'Card ' + (imgIdx + 1);
+    imgWrap.appendChild(img);
+    const overlay = document.createElement('img');
+    overlay.className = 'select-overlay';
+    overlay.src = 'Assets/Generales/GN22.png';
+    overlay.alt = '';
+    imgWrap.appendChild(overlay);
+
+    // Sound button
+    const snd = document.createElement('button');
+    snd.className = 'card-snd img-btn gn-aud-yellow';
+    snd.onclick = e => { e.stopPropagation(); playCardSound(imgIdx, snd); };
+
+    card.appendChild(imgWrap);
+    card.appendChild(snd);
+    card.onclick = () => toggleCard(i);
+    grid.appendChild(card);
+  }
+}
+
+function toggleCard(slot) {
+  playSfx(sfx.pop);
+  const max = taskType === 'memo' ? 2 : 3;
+  const idx = selections.indexOf(slot);
+  if (idx !== -1) {
+    selections.splice(idx, 1);
+  } else {
+    if (selections.length >= max) selections.shift();
+    selections.push(slot);
+  }
+  document.querySelectorAll('.card').forEach(c => {
+    c.classList.toggle('selected', selections.includes(+c.dataset.slot));
+  });
+}
+
+// ─── Card screen actions ──────────────────────────────────────────────────────
+function nextCards() {
+  const need = taskType === 'memo' ? 2 : 3;
+  if (selections.length < need) {
+    showPopup(need === 2
+      ? 'Please remember to choose 2 images. Press OK to go back and finish your selection.'
+      : 'Please remember to choose at least 3 images. Press OK to go back and finish your selection.');
+    return;
+  }
+
+  // Record which image indices the user chose (for memory map seeding)
+  const map = currentMap();
+  if (taskType === 'conv') selections.forEach(slot => convUnicas.add(map[slot]));
+  if (taskType === 'div')  selections.forEach(slot => divUnicas.add(map[slot]));
+
+  stopAudio();
+  const maxRound = taskType === 'memo' ? 3 : 5;
+  if (round + 1 >= maxRound) {
+    if (taskType === 'conv') convDone = true;
+    else if (taskType === 'div') divDone = true;
+    else memDone = true;
+    showComplete();
+  } else {
+    playSfx(sfx.transicion);
+    round++;
+    selections = [];
+    buildGrid();
+    updateRoundLabel();
+  }
+}
+
+function stopAudio() {
+  if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
+  if (currentSndBtn) { currentSndBtn.classList.remove('playing'); currentSndBtn = null; }
+}
+
+function exitCards() { stopAudio(); go('tareas'); }
+
+// ─── Emoji animation ──────────────────────────────────────────────────────────
+// Mirrors DemoGame DibujarGif(): cycles through EMOJI1/00–19.png at ~60fps (16ms/frame).
+let emojiTimer = null;
+let emojiFrame = 0;
+
+function startEmoji() {
+  emojiFrame = 0;
+  function step() {
+    document.getElementById('emoji-img').src =
+      'Assets/GIFS/EMOJI1/' + String(emojiFrame).padStart(2, '0') + '.png';
+    emojiFrame = (emojiFrame + 1) % 20;
+    emojiTimer = setTimeout(step, 16);
+  }
+  step();
+}
+
+function stopEmoji() {
+  if (emojiTimer) { clearTimeout(emojiTimer); emojiTimer = null; }
+}
+
+// ─── Task-complete overlay ────────────────────────────────────────────────────
+// Complete overlay backgrounds (imgFondoEstaticoA/B/D in DemoGame)
+const COMPLETE_BG = { conv: 'Assets/FondoEstatico/00.png', div: 'Assets/FondoEstatico/02.png', memo: 'Assets/FondoEstatico/06.png' };
+
+function showComplete() {
+  playSfx(sfx.completo);
+  startEmoji();
+  const overlay = document.getElementById('complete');
+  overlay.style.backgroundImage = `url('${COMPLETE_BG[taskType]}')`;
+  overlay.style.backgroundSize = 'cover';
+  overlay.style.backgroundPosition = 'center';
+  overlay.classList.add('on');
+  setTimeout(() => { overlay.classList.remove('on'); stopEmoji(); playTransition(TASK_TRANS[taskType], () => go('tareas')); }, 2000);
+}
+
+// ─── Popup ────────────────────────────────────────────────────────────────────
+function showPopup(msg) {
+  document.getElementById('popup-msg').textContent = msg;
+  document.getElementById('popup').classList.add('on');
+}
+function closePopup() { playSfx(sfx.boton); document.getElementById('popup').classList.remove('on'); }
+</script>
+</body>
+</html>
