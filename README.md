@@ -1,4 +1,6 @@
-# TUe MIM v1
+# Mind In Image App
+
+Current Version: v26.1 | Last Update: Jul 9, 2026
 
 Interactive prototype of the CuCo MIM cognitive assessment game, co-developed bu Eindhoven University of Technology (TU/e) and Wageningen University & Research (WUR). This is a single-file HTML implementation that mirrors the full game flow and visual design of the reference implementation (`DemoGame_MIM_v1`).
 
