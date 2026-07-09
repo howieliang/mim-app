@@ -17,7 +17,7 @@
       font-family: sans-serif;
     }
 
-    /* Centered 3:4 portrait column */
+    /* Centered 9:16 portrait column (1080×1920) */
     #col {
       position: relative;
       background: #f0f0f0;
@@ -61,7 +61,7 @@
       border: 1.5px solid rgba(255,255,255,0.3);
       border-radius: 8px;
       padding: 8px 10px;
-      font-size: 19px;
+      font-size: 15px;
       color: #fff;
       line-height: 1.45;
       flex: 1;
@@ -79,7 +79,7 @@
     .btn {
       border: none;
       border-radius: 8px;
-      font-size: 21px;
+      font-size: 17px;
       font-weight: bold;
       color: #fff;
       cursor: pointer;
@@ -180,7 +180,7 @@
     #scr-cards { justify-content: flex-start; padding: 1.5% 5% 2%; gap: 1%; }
 
     #round-label {
-      font-size: 35px;
+      font-size: 28px;
       font-weight: bold;
       flex-shrink: 0;
       align-self: flex-start;
@@ -270,8 +270,8 @@
       overflow: hidden;
       border: 2px solid #ccc;
     }
-    #popup-header { background: #e67e22; color: #fff; font-weight: bold; padding: 8px 12px; font-size: 21px; }
-    #popup-msg { padding: 12px; font-size: 19px; color: #333; line-height: 1.45; }
+    #popup-header { background: #e67e22; color: #fff; font-weight: bold; padding: 8px 12px; font-size: 17px; }
+    #popup-msg { padding: 12px; font-size: 15px; color: #333; line-height: 1.45; }
     #popup-ok { display: block; width: 75%; margin: 8px auto 12px; padding: 0; aspect-ratio: 300 / 86; }
 
     /* ── COMPLETE overlay ── */
@@ -286,8 +286,8 @@
       gap: 14px;
     }
     #complete.on { display: flex; }
-    #complete-text { font-size: 42px; font-weight: bold; text-align: center; padding: 0 10%; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.5); }
-    #complete p { color: #fff; font-size: 21px; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+    #complete-text { font-size: 34px; font-weight: bold; text-align: center; padding: 0 10%; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.5); }
+    #complete p { color: #fff; font-size: 17px; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
 
     /* ── TRANSITION overlay ── */
     #trans-overlay {
@@ -314,13 +314,13 @@
   <div class="scr on" id="scr-loading">
     <img src="Assets/Generales/GN00.png" style="width:55%;object-fit:contain;flex-shrink:0">
     <div id="load-bar-bg"><div id="load-bar"></div></div>
-    <p style="color:#888;font-size:21px">Loading assets…</p>
+    <p style="color:#888;font-size:17px">Loading assets…</p>
   </div>
 
   <!-- ══ INICIO ══ -->
   <div class="scr" id="scr-inicio">
     <img src="Assets/Generales/GN00.png" style="width:80%;object-fit:contain;flex-shrink:0">
-    <p style="color:#555;font-size:22px">User ID: <strong id="uid"></strong></p>
+    <p style="color:#555;font-size:18px">User ID: <strong id="uid"></strong></p>
     <button class="btn img-btn gn-play" style="width:70%;aspect-ratio:400/67" onclick="playSfx(sfx.papel);go('tareas')"></button>
   </div>
 
@@ -328,7 +328,7 @@
   <div class="scr" id="scr-tareas">
     <img src="Assets/Generales/GN01.png" style="width:90%;object-fit:contain;flex-shrink:0">
     <div class="instr-row">
-      <div class="instr" style="font-size:18px">
+      <div class="instr" style="font-size:14px">
         Tap a brown task to begin, and watch it turn green when you finish.
         You can repeat it as often as you like. Missions reset every day.
       </div>
@@ -379,7 +379,7 @@
   <div class="scr" id="scr-cards">
     <div id="round-label">1/5</div>
     <div class="instr-row">
-      <div class="instr" id="cards-tip" style="padding:6px 10px;font-size:18px"></div>
+      <div class="instr" id="cards-tip" style="padding:6px 10px;font-size:14px"></div>
       <button class="instr-btn img-btn gn-aud-blue" id="btn-instr-cards"></button>
     </div>
     <div id="card-grid"></div>
@@ -637,15 +637,15 @@ const userId = (() => {
 })();
 document.getElementById('uid').textContent = userId;
 
-// ─── Layout: maintain 3:4 portrait column ────────────────────────────────────
+// ─── Layout: maintain 9:16 portrait column ───────────────────────────────────
 function resize() {
   const col = document.getElementById('col');
   let h = window.innerHeight;
-  let w = h * 3 / 4;
-  if (w > window.innerWidth) { w = window.innerWidth; h = w * 4 / 3; }
+  let w = h * 9 / 16;
+  if (w > window.innerWidth) { w = window.innerWidth; h = w * 16 / 9; }
   col.style.width  = w + 'px';
   col.style.height = h + 'px';
-  col.style.fontSize = Math.round(w / 28) + 'px';
+  col.style.fontSize = Math.round(w / 35) + 'px';
 }
 window.addEventListener('resize', resize);
 resize();
