@@ -289,6 +289,79 @@
     #complete-text { font-size: 34px; font-weight: bold; text-align: center; padding: 0 10%; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.5); }
     #complete p { color: #fff; font-size: 17px; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
 
+    /* ── SETUP screen ── */
+    #scr-setup { justify-content: center; gap: 4%; padding: 5%; }
+    #scr-setup h2 { font-size: 18px; font-weight: bold; color: #333; text-align: center; margin: 0; }
+    .setup-field { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+    .setup-field label { font-size: 14px; color: #555; }
+    .setup-field input { font-size: 14px; padding: 10px 12px; border: 2px solid #bbb; border-radius: 8px; outline: none; width: 100%; box-sizing: border-box; }
+    .setup-field input:focus { border-color: #2980b9; }
+    .setup-error { color: #c0392b; font-size: 12px; min-height: 16px; text-align: center; }
+    .setup-btn-row { display: flex; width: 100%; gap: 5%; }
+    .setup-btn-row .btn { flex: 1; padding: 12px 0; }
+
+    /* ── RESET ID modal ── */
+    #reset-modal {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #reset-modal.on { display: flex; }
+    #reset-box {
+      background: #fff;
+      border-radius: 12px;
+      width: 82%;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 2px solid #ccc;
+    }
+    #reset-box h3 { font-size: 15px; font-weight: bold; color: #333; margin: 0; }
+    .reset-btn-row { display: flex; gap: 5%; }
+    .reset-btn-row .btn { flex: 1; padding: 10px 0; }
+
+    /* ── PENDING LOG modal ── */
+    #pending-modal {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #pending-modal.on { display: flex; }
+    #pending-box {
+      background: #fff;
+      border-radius: 12px;
+      width: 88%;
+      max-height: 70%;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border: 2px solid #ccc;
+    }
+    #pending-box h3 { font-size: 15px; font-weight: bold; color: #333; margin: 0; }
+    #pending-content {
+      font-size: 11px;
+      font-family: monospace;
+      color: #333;
+      overflow-y: auto;
+      flex: 1;
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: #f5f5f5;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+
     /* ── TRANSITION overlay ── */
     #trans-overlay {
       display: none;
@@ -310,6 +383,25 @@
   <div id="fondo-layer"><img id="fondo-img" src="" alt=""></div>
   <div id="trans-overlay"><img id="trans-img" src="" alt=""></div>
 
+  <!-- ══ SETUP ══ -->
+  <div class="scr" id="scr-setup">
+    <img src="Assets/Generales/GN00.png" style="width:60%;object-fit:contain;flex-shrink:0">
+    <h2>Set User ID</h2>
+    <div class="setup-field">
+      <label>Password</label>
+      <input type="password" id="setup-pwd" placeholder="Enter password">
+    </div>
+    <div class="setup-field">
+      <label>User ID</label>
+      <input type="text" id="setup-id" placeholder="Enter your ID">
+    </div>
+    <div class="setup-error" id="setup-error"></div>
+    <div class="setup-btn-row">
+      <button class="btn" style="background:#888" onclick="skipSetup()">Skip (Guest)</button>
+      <button class="btn" style="background:#2980b9" onclick="saveSetup()">Save</button>
+    </div>
+  </div>
+
   <!-- ══ CARGANDO ══ -->
   <div class="scr on" id="scr-loading">
     <img src="Assets/Generales/GN00.png" style="width:55%;object-fit:contain;flex-shrink:0">
@@ -320,7 +412,10 @@
   <!-- ══ INICIO ══ -->
   <div class="scr" id="scr-inicio">
     <img src="Assets/Generales/GN00.png" style="width:80%;object-fit:contain;flex-shrink:0">
-    <p style="color:#555;font-size:18px">User ID: <strong id="uid"></strong></p>
+    <p style="color:#555;font-size:18px">User ID: <strong id="uid"></strong>
+      <button onclick="openResetModal()" style="margin-left:8px;font-size:12px;background:none;border:none;color:#2980b9;cursor:pointer;text-decoration:underline;padding:0">Change</button>
+    </p>
+    <p id="pending-indicator" style="display:none;color:#c0392b;font-size:13px;cursor:pointer;text-align:center" onclick="openPendingModal()">&#9888; <span id="pending-count">0</span> unsent log(s) — tap to view</p>
     <button class="btn img-btn gn-play" style="width:70%;aspect-ratio:400/67" onclick="playSfx(sfx.papel);go('tareas')"></button>
   </div>
 
@@ -386,6 +481,38 @@
     <div class="btn-row" style="margin-top:2px">
       <button class="btn img-btn gn-exit"     style="aspect-ratio:300/86" onclick="exitCardsTransition()"></button>
       <button class="btn img-btn gn-continue" style="aspect-ratio:300/86" onclick="nextCards()"></button>
+    </div>
+  </div>
+
+  <!-- ══ RESET ID MODAL ══ -->
+  <div id="reset-modal">
+    <div id="reset-box">
+      <h3>Change User ID</h3>
+      <div class="setup-field">
+        <label>Password</label>
+        <input type="password" id="reset-pwd" placeholder="Enter password">
+      </div>
+      <div class="setup-field">
+        <label>New User ID</label>
+        <input type="text" id="reset-id" placeholder="Enter new ID">
+      </div>
+      <div class="setup-error" id="reset-error"></div>
+      <div class="reset-btn-row">
+        <button class="btn" style="background:#888" onclick="closeResetModal()">Cancel</button>
+        <button class="btn" style="background:#2980b9" onclick="confirmReset()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PENDING LOG MODAL ══ -->
+  <div id="pending-modal">
+    <div id="pending-box">
+      <h3>Unsent logs (stored locally)</h3>
+      <div id="pending-content"></div>
+      <div class="reset-btn-row">
+        <button class="btn" style="background:#888" onclick="closePendingModal()">Close</button>
+        <button class="btn" style="background:#27ae60" onclick="retryPending()">Retry All</button>
+      </div>
     </div>
   </div>
 
@@ -561,12 +688,143 @@ function playTransition(type, onMidpoint) {
   stepOut();
 }
 
+// ─── Logging ──────────────────────────────────────────────────────────────────
+const sessionLog = [];
+const GAME_TYPE = { conv: 1, div: 2, memo: 3 };
+
+function formatTimestamp() {
+  const d = new Date();
+  const pad = (n, len = 2) => String(n).padStart(len, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-` +
+         `${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}:` +
+         `${pad(d.getMilliseconds(), 3)}`;
+}
+
+function logRound(roundNum, imageIds) {
+  const entry = [
+    getManagerId() || 'guest',
+    GAME_TYPE[taskType],
+    roundNum,
+    imageIds[0] !== undefined ? imageIds[0] : '',
+    imageIds[1] !== undefined ? imageIds[1] : '',
+    imageIds[2] !== undefined ? imageIds[2] : '',
+    formatTimestamp()
+  ];
+  sessionLog.push(entry);
+  console.log(entry);
+  sendToDataFoundry(entry);
+}
+
+// ─── Data Foundry ─────────────────────────────────────────────────────────────
+const DF_DATASET_ID    = "25535";
+const DF_ACTIVITY_NAME = "mim_game_data";
+const DF_API_TOKEN     = "U1FkSmFvS3dVSDN5UnU3MUVpR0ROZjN1QVBhc0dsZVpDQStTbmtIdzhTbz0=";
+const DF_SOURCE_ID     = "d257ec2928fb945e6";
+const DF_URL           = `https://datafoundry.id.tue.nl/api/v1/datasets/ts/${DF_DATASET_ID}?activity=${DF_ACTIVITY_NAME}`;
+const PENDING_KEY      = 'mim_pending_log';
+
+function getPending() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY)) || []; }
+  catch (e) { return []; }
+}
+
+function savePending(entry) {
+  const queue = getPending();
+  queue.push(entry);
+  localStorage.setItem(PENDING_KEY, JSON.stringify(queue));
+  updatePendingIndicator();
+}
+
+function removePendingFirst() {
+  const queue = getPending();
+  queue.shift();
+  localStorage.setItem(PENDING_KEY, JSON.stringify(queue));
+  updatePendingIndicator();
+}
+
+function updatePendingIndicator() {
+  const n = getPending().length;
+  const el = document.getElementById('pending-indicator');
+  const ct = document.getElementById('pending-count');
+  if (el) el.style.display = n > 0 ? 'block' : 'none';
+  if (ct) ct.textContent = n;
+}
+
+function postToDF(entry) {
+  const data = {
+    user_id:      entry[0],
+    game_type:    entry[1],
+    round_number: entry[2],
+    answer_1:     entry[3],
+    answer_2:     entry[4],
+    answer_3:     entry[5],
+    timestamp:    entry[6]
+  };
+  return fetch(DF_URL, {
+    method: 'POST',
+    mode: 'cors',
+    cache: 'no-cache',
+    headers: { 'Content-Type': 'application/json', 'api_token': DF_API_TOKEN, 'source_id': DF_SOURCE_ID },
+    redirect: 'follow',
+    referrerPolicy: 'no-referrer',
+    body: JSON.stringify(data)
+  }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r; });
+}
+
+function sendToDataFoundry(entry) {
+  postToDF(entry)
+    .then(() => {
+      console.log('DF sent:', entry);
+      drainPending();
+    })
+    .catch(err => {
+      console.warn('DF send failed, saving locally:', err);
+      savePending(entry);
+    });
+}
+
+let _draining = false;
+function drainPending() {
+  if (_draining) return;
+  const queue = getPending();
+  if (queue.length === 0) return;
+  _draining = true;
+  postToDF(queue[0])
+    .then(() => {
+      console.log('DF drained entry:', queue[0]);
+      removePendingFirst();
+      _draining = false;
+      drainPending();
+    })
+    .catch(err => {
+      console.warn('DF drain failed, will retry later:', err);
+      _draining = false;
+    });
+}
+
+function openPendingModal() {
+  const queue = getPending();
+  document.getElementById('pending-content').textContent =
+    queue.length === 0 ? '(none)' : queue.map(e => JSON.stringify(e)).join('\n');
+  document.getElementById('pending-modal').classList.add('on');
+}
+
+function closePendingModal() {
+  document.getElementById('pending-modal').classList.remove('on');
+}
+
+function retryPending() {
+  closePendingModal();
+  drainPending();
+}
+
 // Navigation wrappers used by HTML buttons
 function backFromInstruct() {
   playSfx(sfx.papel);
   playTransition(TASK_TRANS[taskType], () => go('tareas'));
 }
 function continueFromInstruct() {
+  logRound(0, []);
   playTransition(TASK_TRANS[taskType], () => enterCards());
 }
 function exitCardsTransition() {
@@ -625,17 +883,61 @@ const divUnicas  = new Set();
 
 const TASK_COLORS = { conv: '#7a367a', div: '#3234ba', memo: '#d715c4' };
 
-// ─── User ID ──────────────────────────────────────────────────────────────────
-const userId = (() => {
-  let id = localStorage.getItem('mim_wf_uid');
-  if (!id) {
-    const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-    id = Array.from({length: 6}, () => c[Math.floor(Math.random() * c.length)]).join('');
-    localStorage.setItem('mim_wf_uid', id);
-  }
-  return id;
-})();
-document.getElementById('uid').textContent = userId;
+// ─── User ID ───────────────────────────────────────────────────────────────
+const MANAGER_PWD = '2357';
+
+function getManagerId() { return localStorage.getItem('mim_manager_id'); }
+
+function applyManagerId(id) {
+  localStorage.setItem('mim_manager_id', id);
+  document.getElementById('uid').textContent = id;
+}
+
+// Setup screen
+function saveSetup() {
+  const pwd = document.getElementById('setup-pwd').value;
+  const id  = document.getElementById('setup-id').value.trim();
+  const err = document.getElementById('setup-error');
+  if (pwd !== MANAGER_PWD) { err.textContent = 'Incorrect password.'; return; }
+  if (!id) { err.textContent = 'Please enter a manager ID.'; return; }
+  applyManagerId(id);
+  go('inicio');
+}
+
+function skipSetup() {
+  applyManagerId('guest');
+  go('inicio');
+}
+
+// Reset modal
+function openResetModal() {
+  document.getElementById('reset-pwd').value = '';
+  document.getElementById('reset-id').value  = '';
+  document.getElementById('reset-error').textContent = '';
+  document.getElementById('reset-modal').classList.add('on');
+}
+
+function closeResetModal() {
+  document.getElementById('reset-modal').classList.remove('on');
+}
+
+function confirmReset() {
+  const pwd = document.getElementById('reset-pwd').value;
+  const id  = document.getElementById('reset-id').value.trim();
+  const err = document.getElementById('reset-error');
+  if (pwd !== MANAGER_PWD) { err.textContent = 'Incorrect password.'; return; }
+  if (!id) { err.textContent = 'Please enter a new ID.'; return; }
+  applyManagerId(id);
+  closeResetModal();
+}
+
+// Initialise display from stored ID (if any)
+const _savedId = getManagerId();
+if (_savedId) document.getElementById('uid').textContent = _savedId;
+
+// On load: show pending count and attempt to drain any stored entries
+updatePendingIndicator();
+drainPending();
 
 // ─── Layout: maintain 9:16 portrait column ───────────────────────────────────
 function resize() {
@@ -700,7 +1002,7 @@ const bar = document.getElementById('load-bar');
 const loadTimer = setInterval(() => {
   pct = Math.min(100, pct + Math.random() * 18);
   bar.style.width = pct + '%';
-  if (pct >= 100) { clearInterval(loadTimer); setTimeout(() => go('inicio'), 350); }
+  if (pct >= 100) { clearInterval(loadTimer); setTimeout(() => getManagerId() ? go('inicio') : go('setup'), 350); }
 }, 120);
 
 // ─── Task menu ────────────────────────────────────────────────────────────────
@@ -904,6 +1206,9 @@ function nextCards() {
   const map = currentMap();
   if (taskType === 'conv') selections.forEach(slot => convUnicas.add(map[slot]));
   if (taskType === 'div')  selections.forEach(slot => divUnicas.add(map[slot]));
+
+  // Log this round's answers (1-based image IDs matching filenames)
+  logRound(round + 1, selections.map(slot => map[slot] + 1));
 
   stopAudio();
   const maxRound = taskType === 'memo' ? 3 : 5;
