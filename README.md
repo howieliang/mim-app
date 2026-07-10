@@ -69,10 +69,16 @@ Loading → Start Screen → Task Menu
 
 **Memory seeding.** The memory map is generated dynamically from the user's actual Convergence and Divergence picks (`convUnicas` / `divUnicas` Sets), supplemented by random distractors drawn from the remaining card pool.
 
-**User ID.** A 6-character random ID is generated on first visit and persisted in `localStorage` under `mim_wf_uid`.
+**User ID.** On first launch the manager is prompted to set a User ID, which is persisted in `localStorage` under `mim_manager_id` and reused on every subsequent visit. If the prompt is skipped, the ID is set to `guest`. The ID can be changed at any time from the start screen via a password-protected reset flow.
+
+**Data logging.** Every time the player presses Continue on a card screen, a log entry is recorded containing: user ID, game type (1 = Convergence, 2 = Divergence, 3 = Memory), round number (0 = instruction screen continue, 1–5 = card rounds), the image IDs of the selected answers, and a timestamp (`yyyy-mm-dd-hh-mm-ss`). Entries are logged to the browser console and accumulated in a session-level `sessionLog` array accessible from DevTools.
+
+**Remote logging.** Log entries are sent in real time to a Data Foundry database via HTTP POST. Each entry is transmitted as a JSON object with fields `user_id`, `game_type`, `round_number`, `answer_1`, `answer_2`, `answer_3`, and `timestamp`.
+
+**Offline resilience.** If a send fails due to a network error or server unavailability, the entry is saved locally in `localStorage` under `mim_pending_log`. Failed entries are retried automatically on the next successful send and on every page load. The start screen displays a warning indicator showing the number of unsent entries; tapping it opens a view of the queued data with a manual retry option.
 
 **Audio.** Two independent audio systems: (1) instruction/card-word audio — one track at a time, toggle on button press; (2) sound effects (`sfx`) — play independently on top. Background music loops on menu screens and stops during card play.
 
 **Transitions.** Page changes use frame-sequence animations (20ms/frame) from `Assets/Transision/`. Convergence uses Estrellas, Divergence uses Nubes, Memory uses Ciudad — matching DemoGame exactly.
 
-**Layout.** A centered 3:4 portrait column scales to any window size via a JS `resize()` listener.
+**Layout.** A centered 9:16 portrait column (optimised for 1080×1920 mobile screens) scales to any window size via a JS `resize()` listener.
