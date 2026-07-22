@@ -409,6 +409,7 @@
     <img src="Assets/Generales/GN00.png" style="width:55%;object-fit:contain;flex-shrink:0">
     <div id="load-bar-bg"><div id="load-bar"></div></div>
     <p style="color:#888;font-size:17px">Loading assets…</p>
+    <p id="load-file" style="color:#666;font-size:13px;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></p>
   </div>
 
   <!-- ══ INICIO ══ -->
@@ -998,14 +999,111 @@ function go(screen) {
   }
 }
 
-// ─── Loading simulation ───────────────────────────────────────────────────────
-let pct = 0;
+// ─── Asset preloading ──────────────────────────────────────────────────────
+// Mirrors DemoGame cargador.js: build the full path manifest, load everything
+// up front (with retry), and drive the loading bar from real progress so that
+// fondo/transition/animation frames are already cached before they're first drawn.
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function buildAssetManifest() {
+  const images = [];
+
+  for (let i = 1; i <= 40; i++) images.push('Assets/Fondo/F' + pad2(i) + '.png');
+  for (let i = 0; i <= 74; i++) images.push(imgPath(i));
+  for (let i = 0; i <= 27; i++) images.push('Assets/Generales/GN' + pad2(i) + '.png');
+
+  Object.values(TRANS_CONFIGS).forEach(cfg => {
+    for (let f = 0; f < cfg.frames; f++) images.push(cfg.folder + '/' + cfg.prefix + pad2(f) + '.png');
+  });
+  Object.values(ANIM_CONFIGS).forEach(cfg => {
+    for (let f = 0; f < cfg.frames; f++) images.push(cfg.folder + '/' + pad2(f) + '.png');
+  });
+
+  for (let i = 0; i <= 6; i++) images.push('Assets/FondoEstatico/' + pad2(i) + '.png');
+  for (let i = 0; i <= 19; i++) images.push('Assets/GIFS/EMOJI1/' + pad2(i) + '.png');
+
+  // Per-card word audio and instruction voiceovers stay lazy (as before) —
+  // they're only needed reactively when a specific sound button is tapped.
+  return { images, audioElements: [...Object.values(sfx), music] };
+}
+
+function preloadImage(url, onDone, retriesLeft = 3) {
+  const img = new Image();
+  img.onload = () => onDone(url);
+  img.onerror = () => {
+    if (retriesLeft > 0) {
+      setTimeout(() => preloadImage(url, onDone, retriesLeft - 1), 1000);
+    } else {
+      console.error('Failed to preload image:', url);
+      onDone(url);
+    }
+  };
+  img.src = url;
+}
+
+function preloadAudioEl(audioEl, onDone, retriesLeft = 3) {
+  const label = audioEl.getAttribute('src') || audioEl.src;
+  let settled = false;
+
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeoutId);
+    audioEl.removeEventListener('canplay', onReady);
+    audioEl.removeEventListener('error', onError);
+    onDone(label);
+  };
+
+  const onReady = finish;
+
+  const onError = () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeoutId);
+    audioEl.removeEventListener('canplay', onReady);
+    audioEl.removeEventListener('error', onError);
+    if (retriesLeft > 0) {
+      setTimeout(() => preloadAudioEl(audioEl, onDone, retriesLeft - 1), 1000);
+    } else {
+      console.error('Failed to preload audio:', label);
+      onDone(label);
+    }
+  };
+
+  // Some browsers throttle/delay preload of detached <audio> elements and never
+  // fire canplay at all — this timeout guarantees the loader can't hang forever.
+  const timeoutId = setTimeout(() => {
+    console.warn('Audio preload timed out, continuing anyway:', label);
+    finish();
+  }, 8000);
+
+  audioEl.addEventListener('canplay', onReady, { once: true });
+  audioEl.addEventListener('error', onError, { once: true });
+  audioEl.load();
+}
+
+let assetsTotal = 0;
+let assetsLoaded = 0;
 const bar = document.getElementById('load-bar');
-const loadTimer = setInterval(() => {
-  pct = Math.min(100, pct + Math.random() * 18);
-  bar.style.width = pct + '%';
-  if (pct >= 100) { clearInterval(loadTimer); setTimeout(() => getManagerId() ? go('inicio') : go('setup'), 350); }
-}, 120);
+const loadFileLabel = document.getElementById('load-file');
+
+function assetReady(label) {
+  assetsLoaded++;
+  bar.style.width = Math.min(100, (assetsLoaded / assetsTotal) * 100) + '%';
+  loadFileLabel.textContent = label;
+  if (assetsLoaded >= assetsTotal) {
+    setTimeout(() => getManagerId() ? go('inicio') : go('setup'), 200);
+  }
+}
+
+function preloadAllAssets() {
+  const { images, audioElements } = buildAssetManifest();
+  assetsTotal = images.length + audioElements.length;
+  images.forEach(url => preloadImage(url, assetReady));
+  audioElements.forEach(el => preloadAudioEl(el, assetReady));
+}
+
+preloadAllAssets();
 
 // ─── Task menu ────────────────────────────────────────────────────────────────
 function refreshTaskButtons() {
