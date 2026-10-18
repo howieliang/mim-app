@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mind in Images - v26.3</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #222;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
+    /* Centered 9:16 portrait column (1080×1920) */
+    #col {
+      position: relative;
+      background: #f0f0f0;
+      overflow: hidden;
+      border: 2px solid #555;
+    }
+
+    .scr {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      align-items: center;
+    }
+    .scr.on { display: flex; }
+
+
+    .box {
+      background: #d8d8d8;
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 21px;
+      text-align: center;
+    }
+
+    /* Instruction text + audio button row */
+    .instr-row {
+      width: 90%;
+      display: flex;
+      gap: 4%;
+      align-items: stretch;
+      flex-shrink: 0;
+    }
+
+    .instr {
+      background: rgba(0,0,0,0.35);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 15px;
+      color: #fff;
+      line-height: 1.45;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .instr-btn {
+      flex-shrink: 0;
+      align-self: center;
+      width: 18%;
+      aspect-ratio: 300 / 303;
+      outline: none;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 8px;
+      font-size: 17px;
+      font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* Audio instruction buttons — same speaker icon as the card grid */
+    .spk {
+      background: transparent;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e6a817;             /* amber, matching the grid speaker */
+    }
+    .spk.playing { color: #c0392b; }  /* red while playing, matching the grid speaker */
+    .spk svg { width: 80%; height: 80%; }
+
+    .btn-dev    { background: #888; opacity: 0.55; cursor: not-allowed; }
+
+    /* ── Language selector (landing page) ── */
+    #lang-stack {
+      width: 80%;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5%;
+      flex-shrink: 0;
+    }
+    .lang-btn {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 0;
+      border: 2px solid #2980b9;
+      border-radius: 12px;
+      background: #fff;
+      color: #2980b9;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .lang-btn:active { background: #eaf3fb; }
+
+    /* ── Onboarding (two instruction pages) ── */
+    #scr-onboard1, #scr-onboard2 { justify-content: center; gap: 3%; padding: 5% 6%; box-sizing: border-box; }
+    .onboard-title { font-size: 22px; font-weight: bold; color: #2980b9; text-align: center; flex-shrink: 0; }
+    .onboard-card {
+      width: 90%;
+      background: #fff;
+      border: 2px solid #2980b9;
+      border-radius: 16px;
+      padding: 26px 22px;
+      font-size: 18px;
+      line-height: 1.5;
+      color: #333;
+      text-align: center;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .instr-card {
+      width: 90%;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #fff;
+      border: 1.5px solid #e2e2e2;
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .icon-circle {
+      flex-shrink: 0;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    .instr-text { font-size: 18px; line-height: 1.4; color: #333; text-align: left; }
+    .icon-purple { background: #8e44ad; }
+    .icon-orange { background: #e67e22; }
+    .icon-green  { background: #27ae60; }
+    .icon-blue   { background: #2980b9; }
+
+    .onboard-nav { width: 90%; display: flex; gap: 5%; flex-shrink: 0; margin-top: 2%; }
+    .onboard-btn {
+      flex: 1;
+      padding: 14px 0;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+    }
+    .onboard-btn.back { background: #888; }
+    .onboard-btn.next { background: #2980b9; }
+    .onboard-btn:active { filter: brightness(0.9); }
+
+    /* ── Task menu buttons (same look as the landing language buttons) ── */
+    .task-btn {
+      width: 90%;
+      box-sizing: border-box;
+      padding: 14px 0;
+      border: 2px solid #2980b9;
+      border-radius: 12px;
+      background: #fff;
+      color: #2980b9;
+      font-size: 17px;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .task-btn:active { background: #eaf3fb; }
+    .task-btn.done {               /* finished task */
+      background: #27ae60;
+      border-color: #27ae60;
+      color: #fff;
+    }
+    .task-btn.locked {             /* grayed out — prerequisites not met */
+      background: #f2f2f2;
+      border-color: #c8c8c8;
+      color: #9a9a9a;
+      cursor: not-allowed;
+    }
+    .task-btn.nav {                /* Back / navigation */
+      background: #888;
+      border-color: #888;
+      color: #fff;
+    }
+
+    /* ── LOADING ── */
+    #scr-loading { justify-content: center; gap: 5%; }
+    #load-bar-bg {
+      width: 75%;
+      height: 18px;
+      background: #ccc;
+      border-radius: 9px;
+      overflow: hidden;
+    }
+    #load-bar { height: 100%; width: 0; background: #2980b9; }
+
+    /* ── INICIO ── */
+    #scr-inicio { justify-content: center; gap: 5%; }
+
+    /* ── TAREAS ── */
+    #scr-tareas { justify-content: flex-start; padding: 2% 5%; gap: 1.5%; }
+    #scr-tareas .instr { background: rgba(0,0,0,0.6); }
+
+    /* "All tasks complete" headline — toggled to flex when all three are done */
+    #tareas-done {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      text-align: center;
+      margin-top: 4%;
+    }
+    #tareas-done img { width: 26%; object-fit: contain; }
+    #tareas-done .done-title { font-size: 20px; font-weight: bold; color: #27ae60; }
+    #tareas-done .done-sub { font-size: 16px; color: #555; }
+
+    /* ── INSTRUCT ── */
+    #scr-instruct { justify-content: flex-start; padding: 3% 5%; gap: 2%; }
+
+    /* ── MEMO1 ── */
+    #scr-memo1 { justify-content: flex-start; padding: 3% 5%; gap: 2%; }
+
+    /* Instruction text uses the onboarding white-card look */
+    #scr-instruct .instr, #scr-memo1 .instr {
+      background: #fff;
+      border: 2px solid #2980b9;
+      border-radius: 16px;
+      color: #333;
+      text-align: center;
+      font-size: 18px;              /* match the first onboarding instruction card */
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    /* Game instruction title — sits above the white instruction card, on the task's colored background */
+    .game-instr-title { font-size: 22px; font-weight: bold; color: #2c3e50; text-align: center; width: 100%; flex-shrink: 0; }
+
+    /* ── CARDS ── */
+    #scr-cards { justify-content: flex-start; padding: 1.5% 5% 2%; gap: 1%; }
+
+    #sel-count {
+      font-size: 18px;
+      font-weight: bold;
+      color: #bbb;              /* gray by default; turns green at 3 selections */
+      text-align: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* Card grid: 2 cols, 4 rows */
+    #card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(4, 1fr);
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      gap: 3px;
+    }
+
+    .card {
+      border: 3px solid #bbb;
+      border-radius: 6px;
+      background: #fff;
+      display: flex;
+      overflow: hidden;
+      cursor: pointer;
+      min-height: 0;
+    }
+    .card.selected { border-color: #e6a817; background: #fffaed; }
+    .card:active { opacity: 0.75; }
+
+    .card-img {
+      position: relative;
+      flex: 0 0 70%;
+      background: #eee;
+      border-right: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 0;
+    }
+    .card-img img.card-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .select-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .card.selected .select-overlay { display: block; }
+    .card.selected .card-img { background: #f5e8c0; }
+
+    /* Right-side utility column: speaker (top) + zoom (bottom), stacked */
+    .card-util {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-util button {
+      flex: 1;
+      min-height: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .card-util button + button { border-top: 1px solid #ddd; }
+    .card-util svg { width: 55%; height: 55%; }
+    .card-snd  { color: #e6a817; }            /* speaker — amber */
+    .card-snd.playing { color: #c0392b; }     /* speaker playing — red */
+    .card-zoom { color: #555; }               /* zoom — gray */
+
+    /* ── ZOOM MODAL (enlarged card image) ── */
+    #zoom-modal {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 150;
+      align-items: center;
+      justify-content: center;
+    }
+    #zoom-modal.on { display: flex; }
+    #zoom-box {
+      position: relative;
+      background: #fff;
+      border-radius: 16px;
+      width: 80%;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    #zoom-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 34px;
+      height: 34px;
+      border: none;
+      background: transparent;
+      font-size: 24px;
+      line-height: 1;
+      color: #555;
+      cursor: pointer;
+    }
+    #zoom-img-wrap {
+      margin-top: 14px;
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      background: #eee;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    #zoom-img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+    #zoom-snd {
+      align-self: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 26px;
+      border: 2px solid #2980b9;
+      border-radius: 999px;       /* pill */
+      background: #fff;
+      color: #2980b9;
+      cursor: pointer;
+    }
+    #zoom-snd.playing { background: #eaf3fb; }
+    #zoom-snd svg { width: 26px; height: 26px; }
+
+    .btn-row {
+      display: flex;
+      width: 100%;
+      gap: 5%;
+      flex-shrink: 0;
+      align-items: center;
+    }
+    .btn-row .btn { flex: 1; }
+
+    /* ── POPUP ── */
+    #popup {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #popup.on { display: flex; }
+    #popup-box {
+      background: #fff;
+      border-radius: 12px;
+      width: 65%;
+      overflow: hidden;
+      border: 2px solid #ccc;
+    }
+    #popup-header { background: #e67e22; color: #fff; font-weight: bold; padding: 8px 12px; font-size: 17px; }
+    #popup-msg { padding: 12px; font-size: 15px; color: #333; line-height: 1.45; }
+    /* Same button style as Continue (.onboard-btn), but red */
+    #popup-ok { display: block; width: 75%; margin: 8px auto 12px; background: #c0392b; }
+
+    /* ── COMPLETE overlay ── */
+    #complete {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 90;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    #complete.on { display: flex; }
+    #complete-text { font-size: 34px; font-weight: bold; text-align: center; padding: 0 10%; color: #333; }
+    #complete p { color: #333; font-size: 17px; }
+
+    /* ── SETUP screen ── */
+    #scr-setup { justify-content: center; gap: 4%; padding: 5%; }
+    #scr-setup h2 { font-size: 18px; font-weight: bold; color: #333; text-align: center; margin: 0; }
+    .setup-field { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+    .setup-field label { font-size: 14px; color: #555; }
+    .setup-field input { font-size: 14px; padding: 10px 12px; border: 2px solid #bbb; border-radius: 8px; outline: none; width: 100%; box-sizing: border-box; }
+    .setup-field input:focus { border-color: #2980b9; }
+    .setup-error { color: #c0392b; font-size: 12px; min-height: 16px; text-align: center; }
+    .setup-btn-row { display: flex; width: 100%; gap: 5%; }
+    .setup-btn-row .btn { flex: 1; padding: 12px 0; }
+
+    /* ── RESET ID modal ── */
+    #reset-modal, #dev-modal {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #reset-modal.on, #dev-modal.on { display: flex; }
+    #reset-box, #dev-box {
+      background: #fff;
+      border-radius: 12px;
+      width: 82%;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 2px solid #ccc;
+    }
+    #reset-box h3, #dev-box h3 { font-size: 15px; font-weight: bold; color: #333; margin: 0; }
+    .reset-btn-row { display: flex; gap: 5%; }
+    .reset-btn-row .btn { flex: 1; padding: 10px 0; }
+
+    /* ── PENDING LOG modal ── */
+    #pending-modal {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #pending-modal.on { display: flex; }
+    #pending-box {
+      background: #fff;
+      border-radius: 12px;
+      width: 88%;
+      max-height: 70%;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border: 2px solid #ccc;
+    }
+    #pending-box h3 { font-size: 15px; font-weight: bold; color: #333; margin: 0; }
+    #pending-content {
+      font-size: 11px;
+      font-family: monospace;
+      color: #333;
+      overflow-y: auto;
+      flex: 1;
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: #f5f5f5;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+<div id="col">
+
+  <!-- ══ SETUP ══ -->
+  <div class="scr" id="scr-setup">
+    <img src="Assets/General/GN00.png" style="width:60%;object-fit:contain;flex-shrink:0">
+    <h2 data-i18n="setup_title">Set User ID</h2>
+    <div class="setup-field">
+      <label data-i18n="password">Password</label>
+      <input type="password" id="setup-pwd" placeholder="Enter password" data-i18n-ph="ph_password">
+    </div>
+    <div class="setup-field">
+      <label data-i18n="userid">User ID</label>
+      <input type="text" id="setup-id" placeholder="Enter your ID" data-i18n-ph="ph_userid">
+    </div>
+    <div class="setup-error" id="setup-error"></div>
+    <div class="setup-btn-row">
+      <button class="btn" style="background:#888" onclick="skipSetup()" data-i18n="skip_guest">Skip (Guest)</button>
+      <button class="btn" style="background:#2980b9" onclick="saveSetup()" data-i18n="save">Save</button>
+    </div>
+  </div>
+
+  <!-- ══ CARGANDO ══ -->
+  <div class="scr on" id="scr-loading">
+    <img src="Assets/General/GN00.png" style="width:55%;object-fit:contain;flex-shrink:0">
+    <div id="load-bar-bg"><div id="load-bar"></div></div>
+    <p style="color:#888;font-size:17px" data-i18n="loading">Loading assets…</p>
+    <p id="load-file" style="color:#666;font-size:13px;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></p>
+  </div>
+
+  <!-- ══ INICIO ══ -->
+  <div class="scr" id="scr-inicio">
+    <img src="Assets/General/GN00.png" style="width:80%;object-fit:contain;flex-shrink:0">
+    <p style="color:#555;font-size:18px"><span data-i18n="userid_label">User ID:</span> <strong id="uid"></strong>
+      <button onclick="openResetModal()" style="margin-left:8px;font-size:12px;background:none;border:none;color:#2980b9;cursor:pointer;text-decoration:underline;padding:0" data-i18n="change">Change</button>
+    </p>
+    <p id="pending-indicator" style="display:none;color:#c0392b;font-size:13px;cursor:pointer;text-align:center" onclick="openPendingModal()">&#9888; <span id="pending-count">0</span> <span data-i18n="pending_msg">unsent log(s) — tap to view</span></p>
+    <p id="expired-msg" style="display:none;color:#c0392b;font-size:18px;font-weight:bold;text-align:center;cursor:pointer" onclick="openResetModal()" data-i18n="expired">Study expired. Create a new account.</p>
+    <!-- Language buttons start the game (language selection not wired yet). -->
+    <div id="lang-stack">
+      <button type="button" class="lang-btn" onclick="onStart('en')">🇬🇧 English</button>
+      <button type="button" class="lang-btn" onclick="onStart('es')">🇪🇸 Español</button>
+      <button type="button" class="lang-btn" onclick="onStart('nl')">🇳🇱 Nederlands</button>
+      <button type="button" class="lang-btn" onclick="onStart('tr')">🇹🇷 Türkçe</button>
+    </div>
+    <div style="color:#999;font-size:13px;flex-shrink:0">v26.3</div>
+    <a href="#" onclick="openDevModal();return false;" style="color:#2980b9;font-size:13px;text-decoration:underline;cursor:pointer;flex-shrink:0" data-i18n="dev_link">developer</a>
+  </div>
+
+  <!-- ══ ONBOARDING 1 ══ -->
+  <div class="scr" id="scr-onboard1">
+    <div class="onboard-title" data-i18n="onboard_title1">Before you start (1/2)</div>
+    <div class="onboard-card">
+      <div style="font-size:40px;margin-bottom:10px">🎵</div>
+      <span data-i18n="volume_msg">Please increase the volume of your device until the background music is audible. This is necessary for the upcoming tests.</span>
+    </div>
+    <div class="onboard-nav">
+      <button type="button" class="onboard-btn back" onclick="go('inicio')" data-i18n="back">Back</button>
+      <button type="button" class="onboard-btn next" onclick="go('onboard2')" data-i18n="next">Next</button>
+    </div>
+  </div>
+
+  <!-- ══ ONBOARDING 2 ══ -->
+  <div class="scr" id="scr-onboard2">
+    <div class="onboard-title" data-i18n="onboard_title2">Before you start (2/2)</div>
+    <button type="button" class="instr-btn spk" onclick="playInstrSound(instrPath(1), this)"></button>
+    <div class="instr-card"><span class="icon-circle icon-purple">📋</span><span class="instr-text" data-i18n="ob_tasks">Complete all 3 tasks in one session.</span></div>
+    <div class="instr-card"><span class="icon-circle icon-orange">📱</span><span class="instr-text" data-i18n="ob_open">Keep the app open until you finish.</span></div>
+    <div class="instr-card"><span class="icon-circle icon-green">⏰</span><span class="instr-text" data-i18n="ob_time">There is no time limit. Take your time.</span></div>
+    <div class="instr-card"><span class="icon-circle icon-blue">👤</span><span class="instr-text" data-i18n="ob_attention">Pay attention during the tasks. Please make all task choices yourself. Use only the app, without notes or photos</span></div>
+    <div class="onboard-nav">
+      <button type="button" class="onboard-btn back" onclick="go('onboard1')" data-i18n="back">Back</button>
+      <button type="button" class="onboard-btn next" onclick="go('tareas')" data-i18n="next">Next</button>
+    </div>
+  </div>
+
+  <!-- ══ TAREAS ══ -->
+  <div class="scr" id="scr-tareas">
+    <div style="display:flex;align-items:baseline;gap:8px;margin-top:3%;flex-shrink:0">
+      <span style="font-size:26px;font-weight:bold;color:#2980b9" data-i18n="menu_title">Today's tasks</span>
+      <span id="menu-lang" style="font-size:16px;font-weight:bold;color:#888"></span>
+      <span style="font-size:13px;color:#999">v26.3</span>
+    </div>
+    <div id="day-label" style="color:#555;font-size:18px;font-weight:bold">Day: 1</div>
+    <div class="instr-row">
+      <div class="instr" style="font-size:14px" data-i18n="menu_tip">
+        Complete the tasks in the order shown. Take your time.
+      </div>
+      <button class="instr-btn spk" id="btn-instr-tareas"
+        onclick="playInstrSound(instrPath(2), this)"></button>
+    </div>
+    <button id="btn-conv" class="task-btn" onclick="startTask('conv')" data-i18n="task1">Task 1 - Go together best</button>
+    <button id="btn-div"  class="task-btn" onclick="startTask('div')" data-i18n="task2">Task 2 - Go together least</button>
+    <button id="btn-memo" class="task-btn locked" onclick="startTask('memo')" data-i18n="task3">Task 3 - Chosen before</button>
+    <!-- Shown only when all three tasks are done; cleared when the game state refreshes -->
+    <div id="tareas-done">
+      <img src="Assets/Anims/emoji/10.png" alt="">
+      <div class="done-title" data-i18n="done_title">Today's tasks are complete.</div>
+      <div class="done-sub" data-i18n="thank_you">Thank you.</div>
+    </div>
+    <button class="task-btn nav" style="width:90%;margin-top:auto" onclick="playSfx(sfx.papel);go('inicio')" data-i18n="back">Back</button>
+  </div>
+
+  <!-- ══ CONVERGENCIA_1 / DIVERGENCIA_1 ══ -->
+  <div class="scr" id="scr-instruct">
+    <div class="game-instr-title" id="instruct-title"></div>
+    <div class="instr-row">
+      <div class="instr" id="instr-text"></div>
+      <button class="instr-btn spk" id="btn-instr-instruct"></button>
+    </div>
+    <div class="box" id="anim-box" style="width:70%;flex:1;min-height:0;margin:2% 0;padding:0;overflow:hidden">
+      <img id="anim-img" style="width:100%;height:100%;object-fit:contain;display:block">
+    </div>
+    <div class="onboard-nav">
+      <button type="button" class="onboard-btn back" onclick="backFromInstruct()" data-i18n="back">Back</button>
+      <button type="button" class="onboard-btn next" onclick="continueFromInstruct()" data-i18n="next">Next</button>
+    </div>
+  </div>
+
+  <!-- ══ MEMORIA_1 ══ -->
+  <div class="scr" id="scr-memo1">
+    <div class="game-instr-title" data-i18n="task3">Task 3 - Chosen before</div>
+    <div class="instr-row">
+      <div class="instr" data-i18n="instr_memo">
+        Choose the three images chosen before
+      </div>
+      <button class="instr-btn spk" onclick="playInstrSound(instrPath(7), this)"></button>
+    </div>
+    <div class="box" id="memo-anim-box" style="width:70%;flex:1;min-height:0;margin:2% 0;padding:0;overflow:hidden">
+      <img id="memo-anim-img" style="width:100%;height:100%;object-fit:contain;display:block">
+    </div>
+    <div class="onboard-nav">
+      <button type="button" class="onboard-btn back" onclick="backFromInstruct()" data-i18n="back">Back</button>
+      <button type="button" class="onboard-btn next" onclick="continueFromInstruct()" data-i18n="next">Next</button>
+    </div>
+  </div>
+
+  <!-- ══ CARD SCREEN (Conv2 / Div2 / Memo2) ══ -->
+  <div class="scr" id="scr-cards">
+    <div id="cards-title" style="font-size:20px;font-weight:bold;color:#2c3e50;text-align:center;width:100%;flex-shrink:0"></div>
+    <div class="instr-row">
+      <div class="instr" id="cards-tip" style="padding:6px 10px;font-size:14px"></div>
+      <button class="instr-btn spk" id="btn-instr-cards"></button>
+    </div>
+    <div id="card-grid"></div>
+    <div id="sel-count">0 of 3</div>
+    <div class="onboard-nav" style="margin-top:2px">
+      <button type="button" class="onboard-btn back" onclick="exitCardsTransition()" data-i18n="exit">Exit</button>
+      <button type="button" class="onboard-btn next" onclick="nextCards()" data-i18n="continue">Continue</button>
+    </div>
+  </div>
+
+  <!-- ══ RESET ID MODAL ══ -->
+  <div id="reset-modal">
+    <div id="reset-box">
+      <h3 data-i18n="reset_title">Change User ID</h3>
+      <div class="setup-field">
+        <label data-i18n="password">Password</label>
+        <input type="password" id="reset-pwd" placeholder="Enter password" data-i18n-ph="ph_password">
+      </div>
+      <div class="setup-field">
+        <label data-i18n="new_userid">New User ID</label>
+        <input type="text" id="reset-id" placeholder="Enter new ID" data-i18n-ph="ph_new_userid">
+      </div>
+      <div class="setup-error" id="reset-error"></div>
+      <div class="reset-btn-row">
+        <button class="btn" style="background:#888" onclick="closeResetModal()" data-i18n="cancel">Cancel</button>
+        <button class="btn" style="background:#2980b9" onclick="confirmReset()" data-i18n="confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DEVELOPER MODAL ══ -->
+  <div id="dev-modal">
+    <div id="dev-box">
+      <h3 data-i18n="dev_title">Developer settings</h3>
+      <div class="setup-field">
+        <label data-i18n="password">Password</label>
+        <input type="password" id="dev-pwd" placeholder="Enter password" data-i18n-ph="ph_password">
+      </div>
+      <div class="setup-field">
+        <label data-i18n="day">Day</label>
+        <select id="day-select" style="font-size:14px;padding:10px 12px;border:2px solid #bbb;border-radius:8px"></select>
+      </div>
+      <div class="setup-field">
+        <label style="font-size:14px;color:#555;cursor:pointer;display:flex;align-items:center;gap:8px"><input type="checkbox" id="debug-toggle"> <span data-i18n="debug">Debug</span></label>
+      </div>
+      <div class="setup-error" id="dev-error"></div>
+      <div class="reset-btn-row">
+        <button class="btn" style="background:#888" onclick="closeDevModal()" data-i18n="cancel">Cancel</button>
+        <button class="btn" style="background:#2980b9" onclick="confirmDev()" data-i18n="confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PENDING LOG MODAL ══ -->
+  <div id="pending-modal">
+    <div id="pending-box">
+      <h3 data-i18n="pending_title">Unsent logs (stored locally)</h3>
+      <div id="pending-content"></div>
+      <div class="reset-btn-row">
+        <button class="btn" style="background:#888" onclick="closePendingModal()" data-i18n="close">Close</button>
+        <button class="btn" style="background:#27ae60" onclick="retryPending()" data-i18n="retry_all">Retry All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ZOOM MODAL (enlarged card image + speaker) ══ -->
+  <div id="zoom-modal">
+    <div id="zoom-box">
+      <button type="button" id="zoom-close" onclick="closeZoom()">&times;</button>
+      <div id="zoom-img-wrap"><img id="zoom-img" src="" alt=""></div>
+      <button type="button" id="zoom-snd"></button>
+    </div>
+  </div>
+
+  <!-- ══ POPUP ══ -->
+  <div id="popup">
+    <div id="popup-box">
+      <div id="popup-header" data-i18n="notice">Notice</div>
+      <div id="popup-msg"></div>
+      <button type="button" class="onboard-btn" id="popup-ok" onclick="closePopup()" data-i18n="ok">OK</button>
+    </div>
+  </div>
+
+  <!-- ══ TASK COMPLETE ══ -->
+  <div id="complete">
+    <div id="complete-text" data-i18n="task_completed">Task Completed!</div>
+    <img id="emoji-img" src="" alt="" style="width:50%;object-fit:contain;flex-shrink:0">
+  </div>
+</div>
+
+<!-- Per-day board data (generated from img_boards.csv). Loaded synchronously as a
+     plain script so it's available immediately and works over http:// and file://. -->
+<script src="boards.js"></script>
+<script src="lang.js"></script>
+<script>
+// ─── Image / audio path helpers ───────────────────────────────────────────────
+// Cards are identified by their real ID (from img_boards.csv / boards.js); files
+// are zero-padded to 6 digits, e.g. 1830 → Cards/ID_001830.png. In debug mode the
+// images come from tCards/ instead of Cards/. Card audio is English.
+function imgPath(id) {
+  return (debugMode ? 'Assets/tCards/' : 'Assets/Cards/') + 'ID_' + String(id).padStart(6, '0') + '.png';
+}
+// uiLang / LANG_NAMES / t() / applyTranslations() are defined in lang.js (loaded first).
+
+// Per-card word audio uses the selected language postfix, e.g. Assets/Audio/Audios/ID_001830_es.mp3
+function audioPath(id) {
+  return 'Assets/Audio/Audios/ID_' + String(id).padStart(6, '0') + '_' + uiLang + '.mp3';
+}
+// Instruction audio files, per language: Assets/Audio/Audios/Instructions/<lang>/<n>.mp3.
+// Only English is recorded for now, so these stay on 'en' regardless of uiLang.
+let instrLang = 'en';
+function instrPath(n) {
+  return 'Assets/Audio/Audios/Instructions/' + instrLang + '/' + n + '.mp3';
+}
+
+// ─── Round boards (per-day card sets from boards.js / img_boards.csv) ─────────
+// boards[csvDay] = { conv:[[8 ids]×5], div:[[8 ids]×5], memo:[[5 distractor ids]×5] }
+// The dropdown Day N maps to CSV row N−1 (CSV days are 0–27).
+const boards = window.MIM_BOARDS || {};
+
+function boardDay() { return dayNumber - 1; }
+
+// Warm the browser cache with every card image used on a given day (conv + div +
+// memo) so the grid never flashes on first render. Memo target cards are a subset
+// of the day's conv/div cards, so this covers all three games. Keyed by folder+day
+// so toggling debug mode re-warms the other folder.
+const _preloadedDays = new Set();
+function preloadDayCards(day) {
+  if (!boards[day]) return;
+  const key = (debugMode ? 'tCards' : 'Cards') + ':' + day;
+  if (_preloadedDays.has(key)) return;
+  _preloadedDays.add(key);
+  const ids = new Set([
+    ...boards[day].conv.flat(), ...boards[day].div.flat(), ...boards[day].memo.flat()
+  ]);
+  ids.forEach(id => { const im = new Image(); im.src = imgPath(id); });
+}
+
+// Memory map built dynamically in initMemoryMap()
+let mapaMemoria = [];
+
+// ─── Background music ────────────────────────────────────────────────────────
+const music = new Audio('Assets/Audio/Musics/musicaMenu.mp3');
+music.loop   = true;
+music.volume = 0.5;
+
+// ─── Effect sounds (independent of instruction/card audio system) ─────────────
+// S00 sonidoPapel   – screen navigation
+// S01 sonidoBoton   – button press
+// S02 sonidoPop     – card image tap / selection
+// S03 sonidoTransicion – round-number transition
+// S04 sonidoCompleto – task complete
+const sfx = Object.fromEntries(
+  ['papel','boton','pop','transicion','completo']
+  .map((name, i) => [name, new Audio('Assets/Audio/Effects/S0' + i + '.mp3')])
+);
+
+function playSfx(sound) {
+  sound.currentTime = 0;
+  sound.play().catch(() => {});
+}
+
+// ─── Audio ───────────────────────────────────────────────────────────────────
+let currentAudio = null;
+let currentSndBtn = null;
+
+// Shared play/toggle — used by both card sounds and instruction sounds
+function playSound(path, btnEl) {
+  if (currentSndBtn === btnEl && currentAudio && !currentAudio.paused) {
+    stopAudio(); return;
+  }
+  stopAudio();
+  const audio = new Audio(path);
+  currentAudio = audio;
+  currentSndBtn = btnEl;
+  btnEl.classList.add('playing');
+  audio.play().catch(() => {});
+  audio.addEventListener('ended', () => {
+    btnEl.classList.remove('playing');
+    if (currentAudio === audio) { currentAudio = null; currentSndBtn = null; }
+  });
+}
+
+function playCardSound(cardId, btnEl) { playSound(audioPath(cardId), btnEl); }
+function playInstrSound(path, btnEl)  { playSound(path, btnEl); }
+
+// ─── Logging ──────────────────────────────────────────────────────────────────
+const sessionLog = [];
+const GAME_TYPE = { conv: 1, div: 2, memo: 3 };
+
+function formatTimestamp() {
+  const d = new Date();
+  const pad = (n, len = 2) => String(n).padStart(len, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-` +
+         `${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}:` +
+         `${pad(d.getMilliseconds(), 3)}`;
+}
+
+function logRound(roundNum, imageIds) {
+  const entry = [
+    getManagerId() || 'guest',
+    GAME_TYPE[taskType],
+    roundNum,
+    imageIds[0] !== undefined ? imageIds[0] : '',
+    imageIds[1] !== undefined ? imageIds[1] : '',
+    imageIds[2] !== undefined ? imageIds[2] : '',
+    formatTimestamp(),
+    dayNumber
+  ];
+  sessionLog.push(entry);
+  console.log(entry);
+  sendToDataFoundry(entry);
+}
+
+// ─── Data Foundry ─────────────────────────────────────────────────────────────
+const DF_DATASET_ID    = "25535";
+const DF_ACTIVITY_NAME = "mim_game_data";
+const DF_API_TOKEN     = "U1FkSmFvS3dVSDN5UnU3MUVpR0ROZjN1QVBhc0dsZVpDQStTbmtIdzhTbz0=";
+const DF_SOURCE_ID     = "d257ec2928fb945e6";
+const DF_URL           = `https://datafoundry.id.tue.nl/api/v1/datasets/ts/${DF_DATASET_ID}?activity=${DF_ACTIVITY_NAME}`;
+const PENDING_KEY      = 'mim_pending_log';
+
+function getPending() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY)) || []; }
+  catch (e) { return []; }
+}
+
+function savePending(entry) {
+  const queue = getPending();
+  queue.push(entry);
+  localStorage.setItem(PENDING_KEY, JSON.stringify(queue));
+  updatePendingIndicator();
+}
+
+function removePendingFirst() {
+  const queue = getPending();
+  queue.shift();
+  localStorage.setItem(PENDING_KEY, JSON.stringify(queue));
+  updatePendingIndicator();
+}
+
+function updatePendingIndicator() {
+  const n = getPending().length;
+  const el = document.getElementById('pending-indicator');
+  const ct = document.getElementById('pending-count');
+  if (el) el.style.display = n > 0 ? 'block' : 'none';
+  if (ct) ct.textContent = n;
+}
+
+function postToDF(entry) {
+  const data = {
+    user_id:      entry[0],
+    game_type:    entry[1],
+    round_number: entry[2],
+    answer_1:     entry[3],
+    answer_2:     entry[4],
+    answer_3:     entry[5],
+    timestamp:    entry[6]
+  };
+  return fetch(DF_URL, {
+    method: 'POST',
+    mode: 'cors',
+    cache: 'no-cache',
+    headers: { 'Content-Type': 'application/json', 'api_token': DF_API_TOKEN, 'source_id': DF_SOURCE_ID },
+    redirect: 'follow',
+    referrerPolicy: 'no-referrer',
+    body: JSON.stringify(data)
+  }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r; });
+}
+
+function sendToDataFoundry(entry) {
+  postToDF(entry)
+    .then(() => {
+      console.log('DF sent:', entry);
+      drainPending();
+    })
+    .catch(err => {
+      console.warn('DF send failed, saving locally:', err);
+      savePending(entry);
+    });
+}
+
+let _draining = false;
+function drainPending() {
+  if (_draining) return;
+  const queue = getPending();
+  if (queue.length === 0) return;
+  _draining = true;
+  postToDF(queue[0])
+    .then(() => {
+      console.log('DF drained entry:', queue[0]);
+      removePendingFirst();
+      _draining = false;
+      drainPending();
+    })
+    .catch(err => {
+      console.warn('DF drain failed, will retry later:', err);
+      _draining = false;
+    });
+}
+
+function openPendingModal() {
+  const queue = getPending();
+  document.getElementById('pending-content').textContent =
+    queue.length === 0 ? '(none)' : queue.map(e => JSON.stringify(e)).join('\n');
+  document.getElementById('pending-modal').classList.add('on');
+}
+
+function closePendingModal() {
+  document.getElementById('pending-modal').classList.remove('on');
+}
+
+function retryPending() {
+  closePendingModal();
+  drainPending();
+}
+
+// Navigation wrappers used by HTML buttons
+function backFromInstruct() {
+  playSfx(sfx.papel);
+  go('tareas');
+}
+function continueFromInstruct() {
+  logRound(0, []);
+  // No transition animation between the instruction and the game rounds;
+  // enterCards() still awaits its image-decode gate, so the grid never flashes.
+  enterCards();
+}
+function exitCardsTransition() {
+  exitCards();
+}
+
+// ─── Example animation engine ─────────────────────────────────────────────────
+// Mirrors DemoGame P01_Convergencia01.js dibujarAnimacionConver_1():
+// first and last frame hold 2000ms, all others advance every 100ms, loops.
+const ANIM_CONFIGS = {
+  conv: { folder: 'Assets/Anims/ExpConvergencia', frames: 31, bg: '#ffff00', boxId: 'anim-box',      imgId: 'anim-img' },
+  div:  { folder: 'Assets/Anims/ExpDivergencia',  frames: 34, bg: '#0077bb', boxId: 'anim-box',      imgId: 'anim-img' },
+  memo: { folder: 'Assets/Anims/ExpMemoria',      frames: 17, bg: '#eb977d', boxId: 'memo-anim-box', imgId: 'memo-anim-img' },
+};
+
+let animTimer = null;
+let animFrame = 0;
+let animConfig = null;
+
+function animStep() {
+  const cfg = animConfig;
+  const img = document.getElementById(cfg.imgId);
+  img.src = cfg.folder + '/' + String(animFrame).padStart(2, '0') + '.png';
+  const isEdge = (animFrame === 0 || animFrame === cfg.frames - 1);
+  animTimer = setTimeout(() => {
+    animFrame = (animFrame + 1) % cfg.frames;
+    animStep();
+  }, isEdge ? 2000 : 100);
+}
+
+function startAnim(type) {
+  stopAnim();
+  animConfig = ANIM_CONFIGS[type];
+  animFrame = 0;
+  document.getElementById(animConfig.boxId).style.background = animConfig.bg;
+  animStep();
+}
+
+function stopAnim() {
+  if (animTimer) { clearTimeout(animTimer); animTimer = null; }
+  animConfig = null;
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let taskType = 'conv';   // 'conv' | 'div' | 'memo'
+let round = 0;
+let selections = [];     // card slot positions (0-7) currently selected
+let convDone = false, divDone = false, memDone = false;
+
+let tareasPrimeraVez  = true;  // TAREAS tip: once per session
+let cardsPrimerAudio  = false; // Cards tip: reset true on each task entry, clears after playing
+
+// Unique image indices chosen by the user across all rounds
+const convUnicas = new Set();
+const divUnicas  = new Set();
+
+// ─── User ID ───────────────────────────────────────────────────────────────
+const MANAGER_PWD = '2357';
+
+function getManagerId() { return localStorage.getItem('mim_manager_id'); }
+
+function applyManagerId(id) {
+  localStorage.setItem('mim_manager_id', id);
+  localStorage.setItem('mim_start_date', todayStr()); // new/changed account → day 1
+  document.getElementById('uid').textContent = id;
+  syncDayFromDate();                                   // recompute day, reset menu state
+}
+
+// ─── Day number ──────────────────────────────────────────────────────────────
+// The study day is counted from the account's creation date: day 1 on that date,
+// +1 each calendar day. Valid study range is 1–28; day 29+ means the study has
+// expired. The dropdown (1–30) is a session-only simulation override.
+let dayNumber = 1;
+
+function todayStr() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+function currentStudyDay() {
+  const start = localStorage.getItem('mim_start_date');
+  if (!start) return 1;
+  const s = new Date(start + 'T00:00:00');
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.floor((t - s) / 86400000) + 1;
+}
+
+function isExpired() { return dayNumber >= 29; }
+
+// Recompute the day from the stored start date; reset menu state if it changed.
+function syncDayFromDate() {
+  const newDay = currentStudyDay();
+  if (newDay !== dayNumber) resetGameState();
+  dayNumber = newDay;
+  updateDayLabel();
+  updateExpiredState();
+}
+
+// Dropdown override (simulation): set the day for this session only.
+function setDay(n) {
+  const d = parseInt(n, 10);
+  const newDay = (d >= 1 && d <= 30) ? d : 1;
+  if (newDay !== dayNumber) resetGameState();
+  dayNumber = newDay;
+  updateDayLabel();
+  updateExpiredState();
+}
+
+function updateDayLabel() {
+  const lbl = document.getElementById('day-label');
+  if (lbl) lbl.textContent = t('day') + ': ' + dayNumber;
+  const sel = document.getElementById('day-select');
+  if (sel) sel.value = String(Math.min(dayNumber, 30));
+}
+
+// Show the "study expired" message and block Play when day ≥ 29 (boards only
+// cover days 0–27, so starting a game past day 28 would otherwise crash).
+function updateExpiredState() {
+  const expired = isExpired();
+  const msg  = document.getElementById('expired-msg');
+  const lang = document.getElementById('lang-stack');
+  if (msg)  msg.style.display  = expired ? 'block' : 'none';
+  if (lang) lang.style.display = expired ? 'none'  : ''; // '' reverts to CSS flex
+}
+
+// Reset menu progress when the day changes (new day = new card set).
+function resetGameState() {
+  convDone = divDone = memDone = false;
+  convUnicas.clear();
+  divUnicas.clear();
+  if (typeof refreshTaskButtons === 'function') refreshTaskButtons();
+}
+
+// ─── Debug mode ───────────────────────────────────────────────────────────────
+// When true, card images load from tCards/ instead of Cards/. Persisted; true by default.
+let debugMode = true;
+
+function setDebug(on) {
+  debugMode = !!on;
+  localStorage.setItem('mim_debug_mode', debugMode ? '1' : '0');
+}
+
+// Pressing Start: warm the selected day's card images (from the active folder) so
+// later gameplay is zero-latency, then enter the task menu.
+function onStart(selectedLang) {
+  if (isExpired()) return; // study over — language buttons are hidden, but guard anyway
+  uiLang = LANG_NAMES[selectedLang] ? selectedLang : 'en';
+  applyTranslations(); // re-render all static UI text in the chosen language
+  document.getElementById('menu-lang').textContent = LANG_FLAGS[uiLang] + ' ' + LANG_NAMES[uiLang];
+  playSfx(sfx.papel);
+  preloadDayCards(boardDay());
+  go('onboard1'); // two-page instruction flow → task menu
+}
+
+// Setup screen
+function saveSetup() {
+  const pwd = document.getElementById('setup-pwd').value;
+  const id  = document.getElementById('setup-id').value.trim();
+  const err = document.getElementById('setup-error');
+  if (pwd !== MANAGER_PWD) { err.textContent = t('err_pwd'); return; }
+  if (!id) { err.textContent = t('err_mgr_id'); return; }
+  applyManagerId(id);
+  go('inicio');
+}
+
+function skipSetup() {
+  applyManagerId('guest');
+  go('inicio');
+}
+
+// Reset modal
+function openResetModal() {
+  document.getElementById('reset-pwd').value = '';
+  document.getElementById('reset-id').value  = '';
+  document.getElementById('reset-error').textContent = '';
+  document.getElementById('reset-modal').classList.add('on');
+}
+
+function closeResetModal() {
+  document.getElementById('reset-modal').classList.remove('on');
+}
+
+function confirmReset() {
+  const pwd = document.getElementById('reset-pwd').value;
+  const id  = document.getElementById('reset-id').value.trim();
+  const err = document.getElementById('reset-error');
+  if (pwd !== MANAGER_PWD) { err.textContent = t('err_pwd'); return; }
+  if (!id) { err.textContent = t('err_new_id'); return; }
+  applyManagerId(id);
+  closeResetModal();
+}
+
+// Developer modal — password-gated Day override + Debug toggle. The controls
+// reflect the current values on open and only take effect when Confirm succeeds.
+function openDevModal() {
+  document.getElementById('dev-pwd').value = '';
+  document.getElementById('dev-error').textContent = '';
+  document.getElementById('day-select').value = String(Math.min(dayNumber, 30));
+  document.getElementById('debug-toggle').checked = debugMode;
+  document.getElementById('dev-modal').classList.add('on');
+}
+
+function closeDevModal() {
+  document.getElementById('dev-modal').classList.remove('on');
+}
+
+function confirmDev() {
+  const pwd = document.getElementById('dev-pwd').value;
+  const err = document.getElementById('dev-error');
+  if (pwd !== MANAGER_PWD) { err.textContent = t('err_pwd'); return; }
+  setDay(document.getElementById('day-select').value);
+  setDebug(document.getElementById('debug-toggle').checked);
+  closeDevModal();
+}
+
+// Initialise display from stored ID (if any)
+const _savedId = getManagerId();
+if (_savedId) document.getElementById('uid').textContent = _savedId;
+
+// Build the day dropdown (1–30; 29–30 simulate the expired state) and derive the
+// current study day from the account's start date.
+(function initDaySelect() {
+  const sel = document.getElementById('day-select');
+  if (sel) {
+    for (let d = 1; d <= 30; d++) {
+      const opt = document.createElement('option');
+      opt.value = String(d);
+      opt.textContent = String(d);
+      sel.appendChild(opt);
+    }
+  }
+  // Migration: an existing account with no stored start date begins counting today.
+  if (getManagerId() && !localStorage.getItem('mim_start_date')) {
+    localStorage.setItem('mim_start_date', todayStr());
+  }
+  dayNumber = currentStudyDay();
+  updateDayLabel();
+  updateExpiredState();
+
+  // Restore debug mode (persisted; true by default) and reflect it in the toggle.
+  const storedDebug = localStorage.getItem('mim_debug_mode');
+  debugMode = (storedDebug === null) ? true : (storedDebug === '1');
+  const dbg = document.getElementById('debug-toggle');
+  if (dbg) dbg.checked = debugMode;
+})();
+
+// On load: show pending count and attempt to drain any stored entries
+updatePendingIndicator();
+drainPending();
+
+// ─── Layout: maintain 9:16 portrait column ───────────────────────────────────
+function resize() {
+  const col = document.getElementById('col');
+  let h = window.innerHeight;
+  let w = h * 9 / 16;
+  if (w > window.innerWidth) { w = window.innerWidth; h = w * 16 / 9; }
+  col.style.width  = w + 'px';
+  col.style.height = h + 'px';
+  col.style.fontSize = Math.round(w / 35) + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ─── Screen navigation ────────────────────────────────────────────────────────
+// Each game uses a solid background color on its instruction screen and its five
+// rounds (the card screen). All other screens fall back to the default.
+// Instruction screens share the game menu's plain background (not listed here, so
+// they fall back to the default like the menu). Only the rounds (cards) get a solid
+// color — each game's rounds use its instruction-animation background (ANIM_CONFIGS).
+const TASK_BG_SCREENS = ['cards'];
+
+// Title shown on each game's instruction screen and its five rounds.
+// Translation keys for each task's title/instruction/tip (resolved via t() at render time).
+const TASK_KEY = { conv: 'task1', div: 'task2', memo: 'task3' };
+const TIP_KEY  = { conv: 'tip_conv', div: 'tip_div', memo: 'tip_memo' };
+
+function setBg(color) {
+  const col = document.getElementById('col');
+  col.style.backgroundImage = '';
+  col.style.backgroundColor = color || '#f0f0f0';
+}
+
+function go(screen) {
+  stopAudio();
+  stopAnim();
+  document.getElementById('zoom-modal').classList.remove('on'); // never linger across screens
+  document.querySelectorAll('.scr').forEach(s => s.classList.remove('on'));
+  document.getElementById('scr-' + screen).classList.add('on');
+  if (screen === 'tareas') refreshTaskButtons();
+
+  // Set background — taskType is already updated before go() is called
+  setBg(TASK_BG_SCREENS.includes(screen) ? ANIM_CONFIGS[taskType].bg : null);
+
+  // Music: play on menus and instruction screens, stop on active card screens
+  // Mirrors DemoGame draw() music logic per estado
+  if (['inicio','tareas','instruct','memo1','onboard1','onboard2'].includes(screen)) {
+    if (music.paused) music.play().catch(() => {});
+  } else if (screen === 'cards') {
+    if (!music.paused) { music.pause(); music.currentTime = 0; }
+  }
+  // Auto-play TAREAS tip on first ever visit (mirrors TareasPrimeraInstruccion)
+  if (screen === 'tareas' && tareasPrimeraVez) {
+    tareasPrimeraVez = false;
+    const btn = document.getElementById('btn-instr-tareas');
+    setTimeout(() => playInstrSound(instrPath(2), btn), 150);
+  }
+  // Auto-play the "before you start" audio instruction whenever page 2 is shown.
+  if (screen === 'onboard2') {
+    const btn = document.querySelector('#scr-onboard2 .spk');
+    setTimeout(() => playInstrSound(instrPath(1), btn), 150);
+  }
+}
+
+// ─── Asset preloading ──────────────────────────────────────────────────────
+// Mirrors DemoGame cargador.js: build the full path manifest, load everything
+// up front (with retry), and drive the loading bar from real progress so that
+// animation/emoji frames are already cached before they're first drawn.
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function buildAssetManifest() {
+  const images = [];
+
+  // Card images are NOT preloaded here (~1,800 of them); preloadDayCards() warms
+  // the selected day's set on Start, and buildGrid loads each board on demand.
+  images.push('Assets/General/GN00.png');  // logo
+  images.push('Assets/General/GN22.png');  // card selection overlay
+
+  // Instruction-example animations (also supply each game's round background color).
+  Object.values(ANIM_CONFIGS).forEach(cfg => {
+    for (let f = 0; f < cfg.frames; f++) images.push(cfg.folder + '/' + pad2(f) + '.png');
+  });
+
+  for (let i = 0; i <= 19; i++) images.push('Assets/Anims/emoji/' + pad2(i) + '.png');
+
+  // Per-card word audio and instruction voiceovers stay lazy (as before) —
+  // they're only needed reactively when a specific sound button is tapped.
+  return { images, audioElements: [...Object.values(sfx), music] };
+}
+
+function preloadImage(url, onDone, retriesLeft = 3) {
+  const img = new Image();
+  img.onload = () => onDone(url);
+  img.onerror = () => {
+    if (retriesLeft > 0) {
+      setTimeout(() => preloadImage(url, onDone, retriesLeft - 1), 1000);
+    } else {
+      console.error('Failed to preload image:', url);
+      onDone(url);
+    }
+  };
+  img.src = url;
+}
+
+function preloadAudioEl(audioEl, onDone, retriesLeft = 3) {
+  const label = audioEl.getAttribute('src') || audioEl.src;
+  let settled = false;
+
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeoutId);
+    audioEl.removeEventListener('canplay', onReady);
+    audioEl.removeEventListener('error', onError);
+    onDone(label);
+  };
+
+  const onReady = finish;
+
+  const onError = () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeoutId);
+    audioEl.removeEventListener('canplay', onReady);
+    audioEl.removeEventListener('error', onError);
+    if (retriesLeft > 0) {
+      setTimeout(() => preloadAudioEl(audioEl, onDone, retriesLeft - 1), 1000);
+    } else {
+      console.error('Failed to preload audio:', label);
+      onDone(label);
+    }
+  };
+
+  // Some browsers throttle/delay preload of detached <audio> elements and never
+  // fire canplay at all — this timeout guarantees the loader can't hang forever.
+  const timeoutId = setTimeout(() => {
+    console.warn('Audio preload timed out, continuing anyway:', label);
+    finish();
+  }, 8000);
+
+  audioEl.addEventListener('canplay', onReady, { once: true });
+  audioEl.addEventListener('error', onError, { once: true });
+  audioEl.load();
+}
+
+let assetsTotal = 0;
+let assetsLoaded = 0;
+const bar = document.getElementById('load-bar');
+const loadFileLabel = document.getElementById('load-file');
+
+function assetReady(label) {
+  assetsLoaded++;
+  bar.style.width = Math.min(100, (assetsLoaded / assetsTotal) * 100) + '%';
+  loadFileLabel.textContent = label;
+  if (assetsLoaded >= assetsTotal) {
+    setTimeout(() => getManagerId() ? go('inicio') : go('setup'), 200);
+  }
+}
+
+function preloadAllAssets() {
+  const { images, audioElements } = buildAssetManifest();
+  assetsTotal = images.length + audioElements.length;
+  images.forEach(url => preloadImage(url, assetReady));
+  audioElements.forEach(el => preloadAudioEl(el, assetReady));
+}
+
+preloadAllAssets();
+
+// ─── Task menu ────────────────────────────────────────────────────────────────
+function refreshTaskButtons() {
+  const bc = document.getElementById('btn-conv');
+  const bd = document.getElementById('btn-div');
+  const bm = document.getElementById('btn-memo');
+  bc.className = 'task-btn' + (convDone ? ' done' : '');
+  bd.className = 'task-btn' + (divDone  ? ' done' : '');
+  if (convDone && divDone) {
+    bm.className = 'task-btn' + (memDone ? ' done' : '');
+    bm.onclick = () => startTask('memo');
+  } else {
+    bm.className = 'task-btn locked';
+    bm.onclick = () => showPopup(t('popup_memo_locked'));
+  }
+  // Show the completion headline only when all three tasks are done. Because this
+  // keys off the done flags, resetGameState() (which clears them) hides it again.
+  document.getElementById('tareas-done').style.display =
+    (convDone && divDone && memDone) ? 'flex' : 'none';
+}
+
+function startTask(type) {
+  playSfx(sfx.boton);
+  taskType = type;
+  round = 0;
+  selections = [];
+
+  if (type === 'memo') {
+    initMemoryMap();
+    cardsPrimerAudio = true;
+    go('memo1');
+    startAnim('memo');
+    const btn = document.querySelector('#scr-memo1 .instr-btn');
+    setTimeout(() => playInstrSound(instrPath(7), btn), 150);
+    return;
+  }
+
+  const isDiv = type === 'div';
+  document.getElementById('instruct-title').textContent = t(TASK_KEY[type]);
+  document.getElementById('instr-text').textContent = t(isDiv ? 'instr_div' : 'instr_conv');
+
+  // Wire instruction audio button to the correct file for this task type
+  const instrBtn = document.getElementById('btn-instr-instruct');
+  const instrFile = instrPath(isDiv ? 5 : 3);
+  instrBtn.onclick = () => playInstrSound(instrFile, instrBtn);
+
+  cardsPrimerAudio = true;
+  go('instruct');
+  startAnim(isDiv ? 'div' : 'conv');
+  setTimeout(() => playInstrSound(instrFile, instrBtn), 150);
+}
+
+// ─── Memory map initialisation ────────────────────────────────────────────────
+// Each round shows 8 cards: 3 "remembered" target cards + 5 distractors.
+// The 15 target cards (3 × 5 rounds) are drawn from the cards the user actually
+// selected during the 5 convergence and 5 divergence rounds. Distractors are
+// drawn from indices 0–74 the user never selected.
+function initMemoryMap() {
+  const day = boardDay();
+  const memoRows = boards[day].memo;                   // 5 rows × 5 distractor IDs
+  const dayPool = Array.from(new Set([                  // every card used this day (pad fallback)
+    ...boards[day].conv.flat(), ...boards[day].div.flat(), ...memoRows.flat()
+  ]));
+
+  // Distinct cards the user selected across convergence + divergence (up to
+  // 3×5 + 3×5 = 30 picks; deduplicated so the same image never appears twice).
+  const selectedPool = Array.from(new Set([...convUnicas, ...divUnicas]));
+
+  // Step 1: randomly choose 15 of them (3 targets × 5 rounds). The memory game is
+  // gated behind finishing convergence + divergence, so there are normally ≥15
+  // distinct picks; pad from this day's cards only as a safety net.
+  let targets = pickRandom(selectedPool, 15);
+  if (targets.length < 15) {
+    const used = new Set(targets);
+    targets = targets.concat(pickRandom(dayPool.filter(n => !used.has(n)), 15 - targets.length));
+  }
+
+  // Step 2: partition the 15 targets sequentially into five rounds — cards 1–3
+  // for round 1, 4–6 for round 2, … — with no card reused, then add the round's
+  // 5 CSV distractors. Dedupe (targets win) and pad to exactly 8 unique cards.
+  mapaMemoria = [0, 1, 2, 3, 4].map(i => {
+    const roundTargets = targets.slice(i * 3, i * 3 + 3);
+    const distractors = (memoRows[i] || []).filter(n => !roundTargets.includes(n));
+    let board = Array.from(new Set([...roundTargets, ...distractors]));
+    if (board.length < 8) {
+      const used = new Set(board);
+      board = board.concat(pickRandom(dayPool.filter(n => !used.has(n)), 8 - board.length));
+    }
+    board = board.slice(0, 8);
+    return pickRandom(board, board.length); // shuffle display order
+  });
+}
+
+function pickRandom(arr, n) {
+  const copy = [...arr];
+  const result = [];
+  for (let i = 0; i < n && copy.length > 0; i++) {
+    const idx = Math.floor(Math.random() * copy.length);
+    result.push(copy.splice(idx, 1)[0]);
+  }
+  return result;
+}
+
+// ─── Enter card screen ────────────────────────────────────────────────────────
+function currentMap() {
+  const day = boardDay();
+  if (taskType === 'conv') return boards[day].conv[round];
+  if (taskType === 'div')  return boards[day].div[round];
+  return mapaMemoria[round];
+}
+
+// Resolve once every card image in the grid is decoded, so the grid can be
+// revealed with no first-render flash. Bounded by a timeout so a slow/missing
+// image can never freeze the transition; decode errors are swallowed.
+function decodeGridImages() {
+  const imgs = [...document.querySelectorAll('#card-grid .card-photo')];
+  const decoded = Promise.all(imgs.map(img =>
+    (img.decode ? img.decode() : Promise.resolve()).catch(() => {})
+  ));
+  const timeout = new Promise(res => setTimeout(res, 2000));
+  return Promise.race([decoded, timeout]);
+}
+
+async function enterCards() {
+  playSfx(sfx.papel);
+  selections = [];
+  buildGrid();
+  updateRoundLabel();
+  document.getElementById('cards-tip').textContent = t(TIP_KEY[taskType]);
+
+  // Wire the tip audio button to the correct file for this task type
+  const tipBtn = document.getElementById('btn-instr-cards');
+  const tipFile = instrPath({ conv: 4, div: 6, memo: 8 }[taskType]);
+  tipBtn.onclick = () => playInstrSound(tipFile, tipBtn);
+
+  // Hard gate: don't reveal the grid until its images are decoded, so the first
+  // round never shows a half-painted grid.
+  await decodeGridImages();
+
+  go('cards');
+
+  // Auto-play tip once per task entry, first round only (mirrors Conv2PrimerAudio / Memo2PrimerAudio)
+  if (cardsPrimerAudio) {
+    cardsPrimerAudio = false;
+    setTimeout(() => playInstrSound(tipFile, tipBtn), 150);
+  }
+}
+
+function updateRoundLabel() {
+  const max = 5;
+  // Round indicator is merged into the centered title, e.g. "Task 1 - Go together best (1/5)"
+  document.getElementById('cards-title').textContent =
+    t(TASK_KEY[taskType]) + ' (' + (round + 1) + '/' + max + ')';
+}
+
+// Selection counter between the grid and the Exit/Continue buttons: gray while the
+// count isn't 3, green when exactly 3 cards are selected.
+function updateSelCount() {
+  const el = document.getElementById('sel-count');
+  const n = selections.length;
+  el.textContent = t('sel_count', { n });
+  el.style.color = (n === 3) ? '#27ae60' : '#bbb';
+}
+
+// ─── Card grid ────────────────────────────────────────────────────────────────
+// Inline icons (use currentColor so CSS controls their color).
+const SPEAKER_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>' +
+  '<path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>' +
+  '<path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>';
+const ZOOM_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<circle cx="11" cy="11" r="8"></circle>' +
+  '<line x1="21" y1="21" x2="16.65" y2="16.65"></line>' +
+  '<line x1="11" y1="8" x2="11" y2="14"></line>' +
+  '<line x1="8" y1="11" x2="14" y2="11"></line></svg>';
+
+// Give every audio-instruction button the same speaker icon as the grid cards.
+document.querySelectorAll('.spk').forEach(b => { b.innerHTML = SPEAKER_SVG; });
+
+function buildGrid() {
+  const grid = document.getElementById('card-grid');
+  grid.innerHTML = '';
+  const indices = currentMap();
+
+  for (let i = 0; i < 8; i++) {
+    const cardId = indices[i];
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.slot = i;
+    card.dataset.imgId = cardId;
+
+    // Image area
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'card-img';
+    const img = document.createElement('img');
+    img.className = 'card-photo';
+    img.src = imgPath(cardId);
+    img.alt = 'Card ' + cardId;
+    imgWrap.appendChild(img);
+    const overlay = document.createElement('img');
+    overlay.className = 'select-overlay';
+    overlay.src = 'Assets/General/GN22.png';
+    overlay.alt = '';
+    imgWrap.appendChild(overlay);
+
+    // Utility column: speaker (top) + zoom (bottom), stacked vertically.
+    // stopPropagation keeps these taps from toggling the card's selection.
+    const util = document.createElement('div');
+    util.className = 'card-util';
+
+    const snd = document.createElement('button');
+    snd.className = 'card-snd';
+    snd.innerHTML = SPEAKER_SVG;
+    snd.onclick = e => { e.stopPropagation(); playCardSound(cardId, snd); };
+
+    const zoom = document.createElement('button');
+    zoom.className = 'card-zoom';
+    zoom.innerHTML = ZOOM_SVG;
+    zoom.onclick = e => { e.stopPropagation(); openZoom(cardId); };
+
+    util.appendChild(snd);
+    util.appendChild(zoom);
+
+    card.appendChild(imgWrap);
+    card.appendChild(util);
+    card.onclick = () => toggleCard(i);
+    grid.appendChild(card);
+  }
+  updateSelCount();
+}
+
+// ─── Zoom modal (enlarged card image) ──────────────────────────────────────────
+function openZoom(cardId) {
+  playSfx(sfx.boton);
+  document.getElementById('zoom-img').src = imgPath(cardId);
+  const snd = document.getElementById('zoom-snd');
+  snd.innerHTML = SPEAKER_SVG;
+  snd.classList.remove('playing');
+  snd.onclick = () => playCardSound(cardId, snd);
+  document.getElementById('zoom-modal').classList.add('on');
+}
+
+function closeZoom() {
+  stopAudio();
+  document.getElementById('zoom-modal').classList.remove('on');
+}
+
+function toggleCard(slot) {
+  playSfx(sfx.pop);
+  // Individual toggle: tapping a card selects/deselects it, with no cap on how
+  // many can be selected (the "3" rule is enforced on Continue, not here).
+  const idx = selections.indexOf(slot);
+  if (idx !== -1) selections.splice(idx, 1);
+  else selections.push(slot);
+  document.querySelectorAll('.card').forEach(c => {
+    c.classList.toggle('selected', selections.includes(+c.dataset.slot));
+  });
+  updateSelCount();
+}
+
+// ─── Card screen actions ──────────────────────────────────────────────────────
+function nextCards() {
+  // Require exactly 3 selections — fewer or more shows the notice.
+  if (selections.length !== 3) {
+    showPopup(t('popup_choose3'));
+    return;
+  }
+
+  // Record which image indices the user chose (for memory map seeding)
+  const map = currentMap();
+  if (taskType === 'conv') selections.forEach(slot => convUnicas.add(map[slot]));
+  if (taskType === 'div')  selections.forEach(slot => divUnicas.add(map[slot]));
+
+  // Log this round's answers (real card IDs, matching Cards/ID_xxxxxx.png)
+  logRound(round + 1, selections.map(slot => map[slot]));
+
+  stopAudio();
+  const maxRound = 5;
+  if (round + 1 >= maxRound) {
+    if (taskType === 'conv') convDone = true;
+    else if (taskType === 'div') divDone = true;
+    else memDone = true;
+    showComplete();
+  } else {
+    playSfx(sfx.transicion);
+    round++;
+    selections = [];
+    buildGrid();
+    updateRoundLabel();
+  }
+}
+
+function stopAudio() {
+  if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
+  if (currentSndBtn) { currentSndBtn.classList.remove('playing'); currentSndBtn = null; }
+}
+
+function exitCards() { stopAudio(); go('tareas'); }
+
+// ─── Emoji animation ──────────────────────────────────────────────────────────
+// Mirrors DemoGame DibujarGif(): cycles through emoji/00–19.png at ~60fps (16ms/frame).
+let emojiTimer = null;
+let emojiFrame = 0;
+
+function startEmoji() {
+  emojiFrame = 0;
+  function step() {
+    document.getElementById('emoji-img').src =
+      'Assets/Anims/emoji/' + String(emojiFrame).padStart(2, '0') + '.png';
+    emojiFrame = (emojiFrame + 1) % 20;
+    emojiTimer = setTimeout(step, 16);
+  }
+  step();
+}
+
+function stopEmoji() {
+  if (emojiTimer) { clearTimeout(emojiTimer); emojiTimer = null; }
+}
+
+// ─── Task-complete overlay ────────────────────────────────────────────────────
+function showComplete() {
+  playSfx(sfx.completo);
+  startEmoji();
+  const overlay = document.getElementById('complete');
+  overlay.style.backgroundImage = '';
+  overlay.style.backgroundColor = '#fff';
+  overlay.classList.add('on');
+  setTimeout(() => { overlay.classList.remove('on'); stopEmoji(); go('tareas'); }, 2000);
+}
+
+// ─── Popup ────────────────────────────────────────────────────────────────────
+function showPopup(msg) {
+  document.getElementById('popup-msg').textContent = msg;
+  document.getElementById('popup').classList.add('on');
+}
+function closePopup() { playSfx(sfx.boton); document.getElementById('popup').classList.remove('on'); }
+</script>
+</body>
+</html>
