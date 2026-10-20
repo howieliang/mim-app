@@ -1151,8 +1151,8 @@ function resetGameState() {
 }
 
 // ─── Debug mode ───────────────────────────────────────────────────────────────
-// When true, card images load from tCards/ instead of Cards/. Persisted; true by default.
-let debugMode = true;
+// When true, card images load from tCards/ instead of Cards/. Persisted; false by default.
+let debugMode = false;
 
 function setDebug(on) {
   debugMode = !!on;
@@ -1256,9 +1256,9 @@ if (_savedId) document.getElementById('uid').textContent = _savedId;
   updateDayLabel();
   updateExpiredState();
 
-  // Restore debug mode (persisted; true by default) and reflect it in the toggle.
+  // Restore debug mode (persisted; false by default) and reflect it in the toggle.
   const storedDebug = localStorage.getItem('mim_debug_mode');
-  debugMode = (storedDebug === null) ? true : (storedDebug === '1');
+  debugMode = (storedDebug === null) ? false : (storedDebug === '1');
   const dbg = document.getElementById('debug-toggle');
   if (dbg) dbg.checked = debugMode;
 })();
